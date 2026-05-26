@@ -1,0 +1,453 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 PADDOCK — SELECT YOUR CIRCUIT</title>
+    <link rel="icon" href="data:,">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --red: #ff1e00;
+            --gold: #ffd600;
+            --green: #00fa9a;
+            --bg: #030406;
+            --surface: rgba(10, 12, 17, 0.6);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #f0f4f8;
+            --muted: #8a9bb0;
+            --blur: blur(12px);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif;
+            min-height: 100vh; overflow-x: hidden; cursor: default;
+            background-image: radial-gradient(circle at top right, rgba(255,30,0,0.05), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(0,250,154,0.03), transparent 40%);
+        }
+
+        body::before {
+            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1000; opacity: 0.2;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+        }
+
+        header {
+            position: relative; padding: 0 5vw; height: 80px; display: flex; align-items: center;
+            justify-content: space-between; border-bottom: 1px solid var(--border); z-index: 10;
+            background: rgba(3,4,6,0.8); backdrop-filter: var(--blur);
+        }
+
+        .logo-group { display: flex; align-items: center; gap: 20px; }
+        .f1-badge {
+            background: var(--red); color: #fff; font-family: 'Orbitron', monospace; font-weight: 900;
+            font-size: 20px; letter-spacing: 2px; padding: 6px 16px; transform: skewX(-12deg);
+            box-shadow: 0 4px 15px rgba(255,30,0,0.3);
+        }
+
+        .header-title { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; letter-spacing: 4px; color: var(--text); text-transform: uppercase; }
+        .header-right { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 2px; }
+        .header-right span { color: var(--green); font-weight: bold;}
+
+        .hero { padding: 80px 5vw 40px; position: relative; overflow: hidden; }
+        .hero::after {
+            content: 'SIMULATOR'; position: absolute; right: -2vw; top: 0; font-family: 'Orbitron', monospace;
+            font-size: 14vw; font-weight: 900; color: rgba(255, 255, 255, 0.02); letter-spacing: -2px; pointer-events: none;
+        }
+
+        .hero-eyebrow { font-family: 'Share Tech Mono', monospace; font-size: 13px; letter-spacing: 4px; color: var(--red); text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; font-weight: 700;}
+        .hero-eyebrow::before { content: ''; display: block; width: 30px; height: 2px; background: var(--red); box-shadow: 0 0 8px var(--red);}
+        .hero h1 { font-family: 'Orbitron', monospace; font-size: clamp(40px, 6vw, 72px); font-weight: 900; letter-spacing: -1px; line-height: 1.1; margin-bottom: 20px; }
+        .hero h1 em { font-style: normal; color: var(--red); text-shadow: 0 0 20px rgba(255,30,0,0.4); }
+        .hero-sub { font-size: 18px; color: var(--muted); letter-spacing: 1px; font-weight: 500; max-width: 500px; line-height: 1.6;}
+
+        .ticker { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 12px 0; overflow: hidden; position: relative; background: rgba(0,0,0,0.3); }
+        .ticker-track { display: flex; gap: 60px; animation: ticker 40s linear infinite; white-space: nowrap; width: max-content; }
+        @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .ticker-item { font-family: 'Share Tech Mono', monospace; font-size: 13px; letter-spacing: 2px; color: var(--muted); }
+        .ticker-item .dot { color: var(--red); margin-right: 12px; text-shadow: 0 0 5px var(--red);}
+        .ticker-item .hl { color: var(--gold); font-weight: bold;}
+
+        .section-label { padding: 50px 5vw 24px; display: flex; align-items: center; justify-content: space-between; }
+        .section-label h2 { font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 700; letter-spacing: 4px; color: var(--text); text-transform: uppercase; }
+        .section-label .count { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--muted); font-weight: bold;}
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); margin: 0 5vw; border-radius: 8px; overflow: hidden;}
+
+        /* Modernized Track Cards */
+        .card { position: relative; background: var(--surface); backdrop-filter: var(--blur); overflow: hidden; cursor: pointer; transition: 0.3s; aspect-ratio: 16/10; min-height: 240px; }
+        .card:hover { z-index: 2; transform: scale(1.02); box-shadow: 0 20px 40px rgba(0,0,0,0.8); border-radius: 8px; background: rgba(20,25,35,0.9);}
+        
+        /* Outline drawing effect heavily improved */
+        .card:hover .card-track svg path { stroke-dashoffset: 0; stroke: rgba(255,255,255,0.8); filter: drop-shadow(0 0 8px currentColor); }
+        .card:hover .card-track svg .drs { stroke: var(--green); filter: drop-shadow(0 0 8px var(--green)); }
+        
+        .card:hover .card-cta { opacity: 1; transform: translateY(0); }
+        .card:hover .flag-stripe { width: 100%; box-shadow: 0 0 15px var(--card-color);}
+
+        .card-bg { position: absolute; inset: 0; opacity: 0.1; background: radial-gradient(ellipse at 70% 30%, var(--card-color, #fff) 0%, transparent 60%); pointer-events: none; transition: 0.4s; }
+        .card:hover .card-bg { opacity: 0.2; }
+
+        .flag-stripe { position: absolute; bottom: 0; left: 0; height: 3px; width: 0%; background: var(--card-color, var(--red)); transition: width 0.4s cubic-bezier(0.2,0.8,0.2,1); }
+
+        .card-track { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 30px 110px 30px 30px; pointer-events:none;}
+        .card-track svg { width: 100%; height: 100%; overflow: visible; }
+        .card-track svg path { fill: none; stroke: rgba(255, 255, 255, 0.15); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; transition: 0.3s; }
+        .card-track svg .drs { stroke: rgba(0, 250, 154, 0.2); stroke-width: 8; }
+
+        .card-info { position: absolute; right: 0; top: 0; bottom: 0; width: 120px; padding: 20px 16px; border-left: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; background: rgba(0, 0, 0, 0.5); pointer-events:none;}
+        .card-round { font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--muted); }
+        .card-country { font-family: 'Share Tech Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text); line-height: 1; margin-top: 6px; }
+        .card-name { font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 1px; margin-top: 4px; text-transform: uppercase; line-height: 1.2; }
+        .card-stats { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+        .stat-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; font-weight:bold; letter-spacing: 1.5px; color: var(--muted); }
+        .stat-value { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; color: #fff; }
+
+        .card-cta {
+            margin-top: 12px; background: var(--red); color: #fff; font-family: 'Orbitron', monospace;
+            font-size: 10px; font-weight: 700; letter-spacing: 2px; padding: 8px 0; text-align: center;
+            opacity: 0; transform: translateY(10px); transition: 0.3s cubic-bezier(0.2,0.8,0.2,1);
+            box-shadow: 0 4px 15px rgba(255,30,0,0.4); border-radius: 3px;
+        }
+
+        .card.featured { grid-column: span 2; aspect-ratio: 21/9; }
+        .card.featured .card-track { padding-right: 150px; }
+        .card.featured .card-info { width: 150px; padding: 24px 20px; }
+        .card.featured .card-country { font-size: 26px; }
+
+        footer { margin: 60px 5vw 0; padding: 30px 0; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: rgba(3,4,6,0.8); backdrop-filter: var(--blur);}
+        .footer-left { font-family: 'Orbitron', monospace; font-weight:700; font-size: 11px; color: var(--muted); letter-spacing: 2px; }
+        .footer-right { display: flex; gap: 40px; font-family: 'Share Tech Mono', monospace; font-weight:bold; font-size: 12px; color: var(--muted); letter-spacing: 1.5px; }
+
+        .scanlines { position: fixed; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.05) 2px, rgba(0, 0, 0, 0.05) 4px); pointer-events: none; z-index: 999; }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .hero { animation: fadeUp 0.6s cubic-bezier(0.2,0.8,0.2,1) both; }
+        .section-label { animation: fadeUp 0.6s cubic-bezier(0.2,0.8,0.2,1) 0.1s both; }
+        .card { animation: fadeUp 0.6s cubic-bezier(0.2,0.8,0.2,1) both; }
+        .card:nth-child(1) { animation-delay: 0.1s; } .card:nth-child(2) { animation-delay: 0.15s; }
+        .card:nth-child(3) { animation-delay: 0.2s; } .card:nth-child(4) { animation-delay: 0.25s; }
+        .card:nth-child(5) { animation-delay: 0.3s; } .card:nth-child(6) { animation-delay: 0.35s; }
+
+        .race-flash { position: fixed; inset: 0; background: var(--red); z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.1s; }
+        .race-flash.active { animation: flashOut 0.8s ease forwards; }
+        @keyframes flashOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+        .difficulty { position: absolute; top: 16px; left: 16px; font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 700; letter-spacing: 2px; padding: 4px 10px; border: 1px solid; border-radius: 4px; text-transform: uppercase; background: var(--surface); backdrop-filter: blur(4px);}
+        .difficulty.easy { color: var(--green); border-color: rgba(0,250,154,0.3); }
+        .difficulty.medium { color: var(--gold); border-color: rgba(255,214,0,0.3); }
+        .difficulty.hard { color: var(--red); border-color: rgba(255,30,0,0.3); }
+
+        .lap-selector { padding: 0 5vw 10px; display: flex; align-items: center; gap: 24px; margin-top:-20px;}
+        .lap-selector label { font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight:bold; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+        .lap-btns { display: flex; gap: 8px; background: rgba(0,0,0,0.4); padding: 4px; border-radius: 6px; border: 1px solid var(--border);}
+        .lap-btn, .s-lap-btn { background: transparent; border: 1px solid transparent; color: var(--muted); font-family: 'Orbitron', monospace; font-weight:700; font-size: 11px; padding: 8px 16px; border-radius: 4px; cursor: pointer; letter-spacing: 1px; transition: 0.2s; }
+        .lap-btn:hover, .s-lap-btn:hover, .lap-btn.active, .s-lap-btn.active { background: rgba(255,30,0,0.1); border-color: var(--red); color: #fff; box-shadow: 0 0 15px rgba(255,30,0,0.3); }
+        .s-lap-btn { border-color: var(--border); } /* Settings modal specific */
+
+        /* Overlays & Modals matched to glassmorphism UI */
+        #race-resume-banner { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9000; background: rgba(10,4,4,0.95); backdrop-filter: var(--blur); border-top: 2px solid var(--red); padding: 20px 5vw; align-items: center; justify-content: space-between; gap: 20px; box-shadow: 0 -10px 40px rgba(255,0,0,0.2);}
+        .resume-banner-msg { font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 700; color: var(--red); letter-spacing: 3px; text-shadow: 0 0 15px var(--red);}
+        .resume-banner-sub { font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight:500; color: #aaa; margin-top: 6px; }
+        .resume-btn { background: var(--red); color: #fff; border: none; padding: 12px 30px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 12px; letter-spacing: 2px; cursor: pointer; border-radius: 4px; white-space: nowrap; flex-shrink: 0; box-shadow: 0 0 20px rgba(255,30,0,0.4); transition:0.3s;}
+        .resume-btn:hover { background: #ff3311; transform: scale(1.02); }
+
+        #race-blocker-overlay, #race-settings-modal { display: none; position: fixed; inset: 0; z-index: 9998; background: rgba(0, 0, 0, 0.85); backdrop-filter: var(--blur); align-items: center; justify-content: center; }
+        .blocker-box, .settings-box { background: #0a0c10; border: 1px solid var(--border); border-radius: 12px; padding: 40px 48px; text-align: center; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+        .blocker-box { border-top: 3px solid var(--red); box-shadow: 0 -2px 30px rgba(255,30,0,0.1), 0 20px 60px rgba(0,0,0,0.8); }
+        .blocker-box h3 { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700; color: var(--red); letter-spacing: 3px; margin-bottom: 16px; }
+        .blocker-box p { color: var(--muted); font-size: 15px; margin-bottom: 30px; line-height: 1.6; }
+        .blocker-btns { display: flex; gap: 16px; justify-content: center; }
+        .blocker-btn { padding: 12px 24px; border-radius: 6px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: 0.2s;}
+        .blocker-btn.primary { background: rgba(255,30,0,0.1); color: var(--red); border: 1px solid var(--red); box-shadow: 0 0 15px rgba(255,30,0,0.2);}
+        .blocker-btn.primary:hover { background: var(--red); color: #fff; box-shadow: 0 0 25px rgba(255,30,0,0.4);}
+        .blocker-btn.secondary { background: transparent; color: var(--muted); border: 1px solid #333; }
+        .blocker-btn.secondary:hover { color:#fff; border-color:#fff;}
+
+        .settings-box { border-top: 3px solid var(--green); text-align: left; box-shadow: 0 -2px 30px rgba(0,250,154,0.1), 0 20px 60px rgba(0,0,0,0.8);}
+        .settings-box h3 { font-family: 'Share Tech Mono', monospace; font-size: 12px; font-weight:bold; letter-spacing: 4px; color: var(--green); margin-bottom: 8px; }
+        .settings-box h4 { font-family: 'Orbitron', monospace; font-size: 24px; font-weight:900; color: #fff; margin-bottom: 30px; letter-spacing: 1px; }
+        .settings-label { font-family: 'Orbitron', monospace; font-weight:700; font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-bottom: 12px; }
+        .settings-lap-btns { display: flex; gap: 8px; margin-bottom: 36px; background:rgba(0,0,0,0.3); padding:4px; border-radius:6px;}
+        .settings-actions { display: flex; gap: 12px; }
+        .settings-confirm { flex: 1; background: rgba(0,250,154,0.1); color: var(--green); border: 1px solid var(--green); border-radius: 6px; font-family: 'Orbitron', monospace; font-weight:700; font-size: 12px; letter-spacing: 2px; padding: 14px; cursor: pointer; transition:0.2s; text-shadow:0 0 10px rgba(0,250,154,0.4);}
+        .settings-confirm:hover { background: var(--green); color: #000; box-shadow: 0 0 25px var(--green); }
+        .settings-cancel { background: transparent; color: var(--muted); border: 1px solid #333; border-radius: 6px; font-family: 'Orbitron', monospace; font-weight:700; font-size: 11px; letter-spacing: 2px; padding: 14px 24px; cursor: pointer; transition:0.2s;}
+        .settings-cancel:hover { border-color:#fff; color:#fff;}
+    </style>
+</head>
+
+<!-- Body logic and scripts perfectly retained below -->
+<body>
+    <div class="scanlines"></div>
+    <div class="race-flash" id="flash"></div>
+
+    <header>
+        <div class="logo-group">
+            <div class="f1-badge">F1</div>
+            <div class="header-title">Paddock · Setup</div>
+        </div>
+        <div class="header-right">
+            SEASON <span>2025/26</span> &nbsp;·&nbsp; 8 CIRCUITS
+        </div>
+    </header>
+
+    <div class="ticker">
+        <div class="ticker-track" id="ticker"></div>
+    </div>
+
+    <div class="hero">
+        <div class="hero-eyebrow">Race Weekend</div>
+        <h1>SELECT YOUR<br><em>CIRCUIT</em></h1>
+        <p class="hero-sub">Initialize the simulator engine. Adjust race distance, study the track layout, and commit to the starting grid.</p>
+    </div>
+
+    <div class="lap-selector">
+        <label>Base Race Distance</label>
+        <div class="lap-btns">
+            <button class="lap-btn" data-laps="5">5 LAPS</button>
+            <button class="lap-btn active" data-laps="15">15 LAPS</button>
+            <button class="lap-btn" data-laps="30">30 LAPS</button>
+            <button class="lap-btn" data-laps="50">50 LAPS</button>
+        </div>
+    </div>
+
+    <div class="section-label">
+        <h2>Simulations Available</h2>
+        <div class="count">DATABASE CONNECTED</div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <footer>
+        <div class="footer-left">F1 PADDOCK AI ENGINE · V11.0</div>
+        <div class="footer-right">
+            <span>22 DRIVERS</span>
+            <span>LIVE PHYSICS</span>
+            <span>STRATEGY SYSTEM</span>
+        </div>
+    </footer>
+
+    <!-- RACE RESUME BANNER -->
+    <div id="race-resume-banner">
+        <div>
+            <div class="resume-banner-msg">🚦 SESSION ACTIVE</div>
+            <div class="resume-banner-sub">Return to your active Grand Prix to continue the simulation.</div>
+        </div>
+        <button class="resume-btn" onclick="window.location.href='index.html'">↩ ENTER RACE</button>
+    </div>
+
+    <!-- RACE BLOCKER OVERLAY -->
+    <div id="race-blocker-overlay">
+        <div class="blocker-box">
+            <h3>🚦 ACCESS DENIED</h3>
+            <p id="blocker-msg">You cannot start a new race while a session is active. Return to your current race or abandon it to begin a new session.</p>
+            <div class="blocker-btns">
+                <button class="blocker-btn primary" onclick="window.location.href='index.html'">↩ ENTER RACE</button>
+                <button id="blocker-abandon-btn" class="blocker-btn secondary" onclick="abandonRace()">ABANDON DATA</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RACE SETTINGS MODAL -->
+    <div id="race-settings-modal">
+        <div class="settings-box">
+            <h3>INITIALIZING PARAMETERS</h3>
+            <h4 id="settings-circuit-name">—</h4>
+            <div class="settings-label">Race Distance</div>
+            <div class="settings-lap-btns" id="settings-lap-btns">
+                <button class="s-lap-btn" data-laps="5">5 LAPS</button>
+                <button class="s-lap-btn active" data-laps="15">15 LAPS</button>
+                <button class="s-lap-btn" data-laps="30">30 LAPS</button>
+                <button class="s-lap-btn" data-laps="50">50 LAPS</button>
+            </div>
+            <div class="settings-actions">
+                <button class="settings-confirm" onclick="confirmLaunch()">INITIALIZE ENGINE</button>
+                <button class="settings-cancel" onclick="document.getElementById('race-settings-modal').style.display='none'">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CIRCUITS = [
+            {
+                id: 'portugal', round: 'RD 01', country: 'PORTUGAL', name: 'Autódromo\ndo Algarve', city: 'Portimão', laps: 66, length: '4.653 km', topSpeed: '318 km/h', difficulty: 'medium', color: '#ff1e00', drs: 2, featured: true,
+                path: 'M 140,160 C 120,160 90,158 75,148 C 55,135 52,115 52,100 C 52,78 55,60 75,55 C 90,50 105,65 115,78 C 100,90 98,105 108,115 C 120,128 140,118 155,105 C 168,93 172,78 165,65 C 158,52 142,50 125,52 C 108,54 95,45 82,30 C 95,18 115,12 135,18 C 155,25 168,35 178,42 C 192,40 205,38 215,40 C 228,44 232,58 235,75 C 238,95 240,120 235,140 C 230,158 218,168 200,168 Z',
+                drsPath: 'M 200,168 C 180,168 160,164 140,160'
+            },
+            {
+                id: 'monaco', round: 'RD 02', country: 'MONACO', name: 'Circuit de\nMonaco', city: 'Monte Carlo', laps: 78, length: '3.337 km', topSpeed: '290 km/h', difficulty: 'hard', color: '#ff00b3', drs: 1,
+                path: 'M 60,150 C 60,150 58,130 65,115 C 72,100 90,95 105,88 C 120,80 128,68 122,55 C 116,42 100,38 88,42 C 75,46 72,58 78,68 C 84,78 98,80 110,75 C 128,68 145,55 160,50 C 175,45 192,48 202,58 C 215,70 218,88 215,105 C 212,120 205,130 195,138 C 183,148 165,152 148,155 C 128,158 105,160 85,157 C 72,154 62,152 60,150 Z',
+                drsPath: 'M 195,138 C 185,145 170,150 148,155'
+            },
+            {
+                id: 'silverstone', round: 'RD 03', country: 'BRITAIN', name: 'Silverstone\nCircuit', city: 'Northamptonshire', laps: 52, length: '5.891 km', topSpeed: '330 km/h', difficulty: 'medium', color: '#007aff', drs: 2,
+                path: 'M 55,130 C 55,115 62,100 75,92 C 90,82 112,82 130,78 C 148,74 162,62 168,48 C 174,34 170,18 158,12 C 145,6 130,10 120,20 C 110,30 112,46 122,55 C 135,65 152,65 165,72 C 178,80 185,95 188,112 C 192,130 190,148 180,160 C 168,172 150,174 132,172 C 112,170 92,164 78,155 C 63,145 55,145 55,130 Z',
+                drsPath: 'M 55,130 C 55,115 62,100 75,92'
+            },
+            {
+                id: 'monza', round: 'RD 04', country: 'ITALY', name: 'Autodromo\ndi Monza', city: 'Monza', laps: 53, length: '5.793 km', topSpeed: '372 km/h', difficulty: 'easy', color: '#00fa9a', drs: 2,
+                path: 'M 60,145 C 60,125 68,105 85,95 C 102,84 125,85 140,75 C 155,65 160,45 152,32 C 142,18 122,15 108,22 C 92,30 88,48 95,60 C 103,74 120,78 135,72 C 152,65 165,52 175,38 C 185,25 195,15 210,12 C 225,10 238,18 242,32 C 246,48 240,68 228,78 C 215,88 198,90 185,98 C 170,108 162,125 160,145 C 158,162 155,175 142,178 C 128,182 110,178 95,170 C 78,161 60,162 60,145 Z',
+                drsPath: 'M 60,145 C 60,125 68,105 85,95'
+            },
+            {
+                id: 'spa', round: 'RD 05', country: 'BELGIUM', name: 'Circuit de\nSpa-Francorchamps', city: 'Stavelot', laps: 44, length: '7.004 km', topSpeed: '360 km/h', difficulty: 'hard', color: '#ffd600', drs: 2,
+                path: 'M 55,155 C 52,135 58,112 72,98 C 86,83 108,78 122,65 C 135,52 138,35 128,22 C 118,9 100,8 88,15 C 74,23 72,40 80,52 C 90,66 108,68 122,62 C 138,55 150,42 160,30 C 172,18 188,10 205,12 C 222,15 232,28 238,44 C 245,62 244,82 240,100 C 235,120 225,138 210,150 C 195,162 175,168 155,170 C 135,172 112,170 95,162 C 75,153 58,172 55,155 Z',
+                drsPath: 'M 238,44 C 245,62 244,82 240,100'
+            },
+            {
+                id: 'suzuka', round: 'RD 06', country: 'JAPAN', name: 'Suzuka\nInternational', city: 'Suzuka City', laps: 53, length: '5.807 km', topSpeed: '325 km/h', difficulty: 'hard', color: '#ff6a00', drs: 2,
+                path: 'M 65,160 C 52,148 50,130 55,115 C 60,98 75,88 90,80 C 108,70 128,68 142,55 C 155,42 155,22 143,12 C 130,2 112,5 100,14 C 88,23 88,40 98,50 C 110,60 128,58 140,50 C 155,40 165,25 178,18 C 192,10 210,10 222,20 C 236,30 240,48 238,65 C 235,84 224,98 215,112 C 204,128 195,144 185,155 C 172,168 155,175 138,175 C 118,175 98,170 82,162 C 74,158 70,165 65,160 Z',
+                drsPath: 'M 55,115 C 60,98 75,88 90,80'
+            },
+            {
+                id: 'bahrain', round: 'RD 07', country: 'BAHRAIN', name: 'Bahrain\nInternational', city: 'Sakhir', laps: 57, length: '5.412 km', topSpeed: '335 km/h', difficulty: 'easy', color: '#a60000', drs: 3,
+                path: 'M 70,162 C 55,150 52,132 58,115 C 65,98 82,88 98,80 C 116,70 136,68 150,58 C 165,46 170,28 162,15 C 153,2 135,0 120,6 C 104,13 100,30 108,42 C 118,55 136,58 150,52 C 165,45 175,32 185,22 C 198,10 215,5 230,10 C 245,16 252,30 252,46 C 252,64 244,80 232,90 C 218,100 200,104 188,115 C 175,128 170,145 165,160 C 158,175 148,182 132,182 C 115,182 98,176 84,168 C 78,164 75,165 70,162 Z',
+                drsPath: 'M 70,162 C 55,150 52,132 58,115'
+            },
+            {
+                id: 'miami', round: 'RD 08', country: 'USA', name: 'Miami\nInternational', city: 'Miami Gardens', laps: 57, length: '5.412 km', topSpeed: '325 km/h', difficulty: 'medium', color: '#00c3ff', drs: 3,
+                path: 'M 58,155 C 55,138 60,118 72,105 C 86,90 108,85 124,75 C 140,64 148,45 140,30 C 132,15 112,12 98,18 C 82,25 80,42 88,54 C 98,68 118,70 132,63 C 148,55 158,40 165,26 C 172,12 182,4 198,2 C 215,0 230,8 238,22 C 246,38 244,58 236,72 C 226,88 210,96 200,110 C 188,125 185,142 188,158 C 191,172 198,182 185,186 C 168,190 148,185 130,178 C 110,170 90,168 75,160 C 67,156 60,158 58,155 Z',
+                drsPath: 'M 188,158 C 191,172 198,182 185,186'
+            }
+        ];
+
+        const tickerItems = [
+            { dot: '●', text: 'VERSTAPPEN', hl: 'P1', extra: '· 1:28.415 FASTEST LAP' },
+            { dot: '●', text: 'NORRIS', hl: 'P2', extra: '· +0.342 GAP' },
+            { dot: '●', text: 'LECLERC', hl: 'P3', extra: '· FERRARI OPTIMUM LAP' },
+            { dot: '●', text: 'PIT WINDOW', hl: 'OPEN', extra: '· SOFT → HARD OPTIMAL' },
+            { dot: '●', text: 'RACE CONTROL', hl: 'DRS ENABLED', extra: '· SYSTEM ONLINE' },
+        ];
+
+        const ticker = document.getElementById('ticker');
+        const tickerContent = tickerItems.map(i => `<span class="ticker-item"><span class="dot">${i.dot}</span>${i.text} <span class="hl">${i.hl}</span> ${i.extra}</span>`).join('');
+        ticker.innerHTML = tickerContent + tickerContent;
+
+        let selectedLaps = 15;
+        document.querySelectorAll('.lap-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.lap-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedLaps = parseInt(btn.dataset.laps);
+                // Sync settings modal buttons
+                document.querySelectorAll('.s-lap-btn').forEach(b => {
+                    b.classList.remove('active');
+                    if(parseInt(b.dataset.laps) === selectedLaps) b.classList.add('active');
+                });
+            });
+        });
+
+        const grid = document.getElementById('grid');
+
+        CIRCUITS.forEach(c => {
+            const card = document.createElement('div');
+            card.className = 'card' + (c.featured ? ' featured' : '');
+            card.style.setProperty('--card-color', c.color);
+
+            card.innerHTML = `
+                <div class="card-bg"></div>
+                <div class="difficulty ${c.difficulty}">${c.difficulty.toUpperCase()}</div>
+                <div class="card-track">
+                    <svg viewBox="40 0 220 190" preserveAspectRatio="xMidYMid meet">
+                        <path d="${c.path}" />
+                        ${c.drsPath ? `<path class="drs" d="${c.drsPath}" />` : ''}
+                    </svg>
+                </div>
+                <div class="card-info">
+                    <div>
+                        <div class="card-round">${c.round}</div>
+                        <div class="card-country">${c.country}</div>
+                        <div class="card-name">${c.name}</div>
+                    </div>
+                    <div class="card-stats">
+                        <div style="display:flex; flex-direction:column; gap:1px;"><div class="stat-label">LENGTH</div><div class="stat-value">${c.length}</div></div>
+                        <div style="display:flex; flex-direction:column; gap:1px;"><div class="stat-label">TOP SPEED</div><div class="stat-value">${c.topSpeed}</div></div>
+                    </div>
+                    <div class="card-cta">ENTER LOBBY</div>
+                </div>
+                <div class="flag-stripe"></div>
+            `;
+            card.addEventListener('click', () => launchRace(c.id));
+            grid.appendChild(card);
+        });
+
+        function isRaceRunning() {
+            try {
+                const raw = localStorage.getItem('f1_race_snapshot');
+                if (!raw) return false;
+                const snap = JSON.parse(raw);
+                const activeStates = ['GREEN', 'SC', 'VSC', 'FORMATION', 'GRID_WAIT'];
+                return snap && snap.v === 2 && activeStates.includes(snap.state);
+            } catch (e) { return false; }
+        }
+
+        let pendingTrackId = null;
+
+        function launchRace(trackId) {
+            if (isRaceRunning()) { showRaceBlocker(); return; }
+            pendingTrackId = trackId;
+            const circuit = CIRCUITS.find(c => c.id === trackId);
+            document.getElementById('settings-circuit-name').textContent = circuit ? circuit.country + ' / ' + circuit.name.replace(/\n/g, ' ') : trackId.toUpperCase();
+            document.getElementById('race-settings-modal').style.display = 'flex';
+        }
+
+        function showRaceBlocker() {
+            const hasBet = localStorage.getItem('f1_has_bet') === '1';
+            document.getElementById('blocker-msg').innerHTML = hasBet 
+                ? 'You have an active bet placed. The race <strong style="color:var(--red);">MUST FINISH</strong> before you can start a new one to prevent token fraud.'
+                : 'Session already active. Resume to track, or permanently abandon the current simulation data.';
+            document.getElementById('blocker-abandon-btn').style.display = hasBet ? 'none' : '';
+            document.getElementById('race-blocker-overlay').style.display = 'flex';
+        }
+
+        function confirmLaunch() {
+            if (!pendingTrackId) return;
+            document.getElementById('race-settings-modal').style.display = 'none';
+            const flash = document.getElementById('flash');
+            flash.classList.add('active');
+            setTimeout(() => { window.location.href = `index.html?track=${pendingTrackId}&laps=${selectedLaps}`; }, 400);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (isRaceRunning()) {
+                document.getElementById('race-resume-banner').style.display = 'flex';
+                document.querySelectorAll('.card').forEach(card => {
+                    card.style.opacity = '0.3'; card.style.pointerEvents = 'none';
+                    card.style.filter = 'grayscale(100%)';
+                });
+            }
+        });
+
+        document.getElementById('settings-lap-btns').querySelectorAll('.s-lap-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.s-lap-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedLaps = parseInt(btn.dataset.laps);
+                // Keep background lap selector synced
+                document.querySelectorAll('.lap-btn').forEach(b => {
+                    b.classList.remove('active');
+                    if(parseInt(b.dataset.laps) === selectedLaps) b.classList.add('active');
+                });
+            });
+        });
+
+        function abandonRace() {
+            if (localStorage.getItem('f1_has_bet') === '1') {
+                alert('⛔ Action denied: Active bets pending.'); return;
+            }
+            if (confirm('⚠ DANGER: Erase all current race data?')) {
+                localStorage.removeItem('f1_race_snapshot'); localStorage.removeItem('f1_has_bet');
+                document.getElementById('race-blocker-overlay').style.display = 'none';
+                document.getElementById('race-resume-banner').style.display = 'none';
+                document.querySelectorAll('.card').forEach(card => {
+                    card.style.opacity = ''; card.style.pointerEvents = ''; card.style.filter = '';
+                });
+            }
+        }
+    </script>
+</body>
+</html>

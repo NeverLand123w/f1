@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estoril F1 AI Simulation</title>
+
+    <!-- Prevents the missing favicon.ico 404 error -->
+    <link rel="icon" href="data:,">
+
+    <!-- LINK TO YOUR CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+</head>
+
+<body>
+    <!-- RESUME RACE BANNER -->
+    <div id="resume-race-banner">
+        <div>
+            <div class="banner-msg">🚦 RACE IN PROGRESS</div>
+            <div class="banner-sub">A race is currently running. Return to continue your session or wait for it to
+                finish.</div>
+        </div>
+        <button id="resume-race-btn" onclick="window.location.href='index.html'">↩ RESUME RACE</button>
+    </div>
+
+    <!-- AUTHENTICATION OVERLAY (2FA ENABLED) -->
+    <div id="auth-modal">
+        <div id="auth-box">
+            <h2 id="auth-title">PADDOCK LOGIN</h2>
+            <div class="auth-sub" id="auth-subtitle">Encrypted connection. Access restricted.</div>
+            <p id="auth-error"
+                style="color:var(--red); font-size:11px; text-align:center; margin-bottom:8px; display:none;"></p>
+
+            <div id="stage-creds">
+                <input type="text" id="auth-user" class="auth-input" placeholder="USERNAME" autocomplete="off">
+                <input type="password" id="auth-pass" class="auth-input" placeholder="PASSWORD">
+            </div>
+
+            <div id="stage-setup-2fa" style="display:none; text-align:center;">
+                <p style="color:#aaa; font-size:10px; margin-bottom:10px;">SCAN WITH GOOGLE AUTHENTICATOR OR AUTHY</p>
+                <img id="qr-code-img" src="" alt="QR Code"
+                    style="border:3px solid #fff; border-radius:4px; margin-bottom:10px;">
+            </div>
+
+            <div id="stage-enter-2fa" style="display:none;">
+                <input type="text" id="auth-otp" class="auth-input" placeholder="6-DIGIT AUTHENTICATOR CODE"
+                    maxlength="6" style="text-align:center; font-size:16px; font-weight:bold; letter-spacing:8px;">
+            </div>
+
+            <button id="auth-submit" class="auth-btn">VERIFY IDENTIFICATION</button>
+            <div id="auth-switch" class="auth-toggle">New driver? Create an account.</div>
+            <button id="auth-guest" class="auth-btn guest-btn">SPECTATE ONLY (GUEST)</button>
+        </div>
+    </div>
+
+
+    <!-- Skip Qualifying Modal -->
+    <div id="skip-qual-modal">
+        <div id="skip-qual-box">
+            <div class="sq-badge">⏱ SESSION OPTIONS</div>
+            <h2>SKIP QUALIFYING?</h2>
+            <p>
+                Skip the Q1 Shootout and go straight to the race.<br>
+                <strong>Grid positions will be randomised</strong> — no lap times, no strategy, just chaos off the line.
+            </p>
+            <div class="sq-btns">
+                <button class="sq-btn" id="sq-allow">SKIP QUALIFYING</button>
+                <button class="sq-btn" id="sq-deny">RUN QUALIFYING</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Immediately hide qualifying modal if a mid-race snapshot exists (before any JS runs) -->
+    <script>
+        (function () {
+            try {
+                var snap = JSON.parse(localStorage.getItem('f1_race_snapshot') || 'null');
+                var raceStates = ['GREEN', 'SC', 'VSC', 'FORMATION', 'GRID_WAIT'];
+                if (snap && snap.v === 2 && raceStates.indexOf(snap.state) !== -1) {
+                    var m = document.getElementById('skip-qual-modal');
+                    if (m) m.style.display = 'none';
+                }
+            } catch (e) { }
+        })();
+    </script>
+
+    <div id="topbar">
+        <div id="f1-logo" style="cursor:pointer;" onclick="safeGoHome()" title="Back to Circuit Select">F1</div>
+        <div id="race-title" style="color:var(--pink)">QUALIFYING SHOOTOUT · <span id="circuit-name-display">PORTUGUESE
+                GRAND PRIX</span></div>
+        <!-- BACK TO HOME -->
+        <button onclick="safeGoHome()"
+            style="background:transparent; color:#666; border:1px solid #333; padding:4px 10px; font-family:'Orbitron',monospace; font-size:8px; cursor:pointer; border-radius:2px; letter-spacing:1px; margin-right:2px;">←
+            CIRCUITS</button>
+        <!-- USER STATE -->
+        <button id="nav-login-btn"
+            style="background:var(--red); color:#fff; border:none; padding:4px 10px; font-family:'Orbitron', monospace; font-size:9px; cursor:pointer; border-radius:2px; margin-left:10px;">LOG
+            IN</button>
+
+        <div id="user-info-box">
+            <span style="color:#aaa;" id="display-username">GUEST</span>
+            <span class="token-display" id="token-display-wrap">🪙 <span id="display-tokens">0.0</span> TKN</span>
+            <button id="buy-tokens-btn">+ BUY TOKENS</button>
+            <div id="active-bets-display" style="display:flex; gap:5px;"></div>
+            <button id="place-bet-btn">💰 PLACE BET</button>
+            <button id="cashout-btn"
+                style="background:rgba(255,165,0,0.15);border:1px solid var(--orange);color:var(--orange);padding:4px 10px;font-family:'Orbitron',monospace;font-size:9px;cursor:pointer;border-radius:2px;transition:0.3s;display:none;font-weight:bold;">⚡
+                CASHOUT</button>
+            <button id="logout-btn">LOGOUT</button>
+        </div>
+        <div id="weather-box">
+            <div id="w-icon">☀️</div>
+            <div class="w-bar-bg">
+                <div class="w-bar-fill" id="w-bar"></div>
+            </div>
+            <div style="font-family:'Share Tech Mono'; font-size:10px; color:#aaa; width:28px" id="w-text">0%</div>
+        </div>
+
+        <div id="flag-display">
+            <div id="drs-indicator">DRS</div>
+            <div id="flag-box" style="background:#e0009c;border-color:#a80074">⏱️</div>
+            <div id="flag-text" style="color:var(--pink)">QUALIFYING</div>
+            <div id="lap-display">SESSION ON</div>
+            <div id="timer-display">00:00.000</div>
+        </div>
+    </div>
+
+    <div id="canvas-wrap">
+        <canvas id="c"></canvas>
+
+        <div id="ui-overlay">
+            <div id="left-panels">
+                <div id="sectors">
+                    <div class="sector-box">
+                        <div class="sec-label">S1</div>
+                        <div class="sec-val" id="s1-val">—.———</div>
+                    </div>
+                    <div class="sector-box">
+                        <div class="sec-label">S2</div>
+                        <div class="sec-val" id="s2-val">—.———</div>
+                    </div>
+                    <div class="sector-box">
+                        <div class="sec-label">S3</div>
+                        <div class="sec-val" id="s3-val">—.———</div>
+                    </div>
+                </div>
+
+                <div id="commentary-box">
+                    <div class="comm-header">
+                        <div class="comm-header-title">🔴 LIVE TV BROADCAST</div>
+                        <div class="comm-controls"><button class="voice-btn" id="voice-toggle">🔊 VOICE ON</button>
+                        </div>
+                    </div>
+                    <div id="comm-feed"></div>
+                </div>
+
+                <div id="fia-box">
+                    <div class="fia-title">FIA RACE CONTROL</div>
+                    <div id="fia-feed" class="fia-feed-wrap">
+                        <div class="fia-msg strat-text">SESSION GREEN - Q1 SHOOTOUT BEGUN</div>
+                    </div>
+                </div>
+
+                <div id="championship-panel">
+                    <div id="champ-header">CHAMPIONSHIP STANDINGS</div>
+                    <div id="champ-body"></div>
+                </div>
+
+                <div style="display:flex;gap:5px;flex-wrap:wrap">
+                    <button id="champ-toggle-btn"
+                        style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);color:var(--yellow);font-family:'Orbitron',monospace;font-size:8px;padding:3px 7px;border-radius:3px;cursor:pointer;pointer-events:all;letter-spacing:1px">
+                        CHAMP</button>
+                    <button id="telgraph-toggle-btn"
+                        style="background:rgba(0,210,190,0.1);border:1px solid rgba(0,210,190,0.3);color:var(--green);font-family:'Orbitron',monospace;font-size:8px;padding:3px 7px;border-radius:3px;cursor:pointer;pointer-events:all;letter-spacing:1px">
+                        TELEMETRY</button>
+
+                    <div id="sector-wx-row"
+                        style="display:flex;gap:4px;align-items:center;font-family:'Share Tech Mono',monospace;font-size:11px;margin-left:2px"
+                        title="Sector weather conditions">
+                        <span style="font-size:9px;color:#555;letter-spacing:1px">WX:</span>
+                        <span id="sec-wx-0" title="S1">☀️</span>
+                        <span id="sec-wx-1" title="S2">☀️</span>
+                        <span id="sec-wx-2" title="S3">☀️</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="leaderboard">
+                <div id="lb-header">
+                    <span>P</span><span></span><span>DRIVER</span><span id="lb-gap-hdr">TIME</span>
+                    <span style="text-align:center">TYR</span><span style="text-align:right">W%</span>
+                    <span style="text-align:right">ERS</span><span style="text-align:right">SPD</span><span
+                        style="text-align:center">PIT</span>
+                </div>
+                <div id="lb-body"></div>
+            </div>
+
+            <div class="cam-btn-group">
+                <button class="cam-btn active" id="cam-auto">AUTO DIR</button>
+                <button class="cam-btn" id="cam-tv">TV CAM</button>
+                <button class="cam-btn" id="cam-chase">CHASE</button>
+                <button class="cam-btn" id="cam-onboard">ONBOARD</button>
+                <button class="cam-btn" id="cam-heli">HELI</button>
+            </div>
+
+            <div id="radio-box">
+                <div id="radio-header">
+                    <div id="radio-dot"></div>
+                    <div id="radio-label">📻 DRIVER RADIO</div>
+                    <div id="radio-driver">ENGINEER</div>
+                </div>
+                <div id="radio-static"></div>
+                <div id="radio-text">Standing by...</div>
+            </div>
+
+            <div id="delta-panel">
+                <div id="delta-bar-wrap">
+                    <div id="delta-label">ΔLAP</div>
+                    <div id="delta-track">
+                        <div id="delta-center"></div>
+                        <div id="delta-fill"></div>
+                    </div>
+                    <div id="delta-val">+0.000</div>
+                </div>
+                <div class="mini-sector-row">
+                    <div class="mini-sec" id="msec-0"></div>
+                    <div class="mini-sec" id="msec-1"></div>
+                    <div class="mini-sec" id="msec-2"></div>
+                </div>
+            </div>
+
+            <div id="tracklimits-overlay">⚠️ TRACK LIMITS VIOLATED</div>
+
+            <div id="steward-overlay">
+                <div id="steward-title">FIA STEWARDS · INVESTIGATION</div>
+                <div id="steward-msg">Incident under investigation</div>
+                <div id="steward-verdict"></div>
+            </div>
+
+            <div id="surface-overlay">⚠ OFF TRACK</div>
+
+            <div id="cascade-alert">
+                <div id="cascade-type">HYDRAULIC FAILURE</div>
+                <div style="font-size:10px;color:#888;margin-top:4px" id="cascade-chain"></div>
+            </div>
+
+            <div id="porpoising-warn">⚠ PORPOISING</div>
+            <div id="drive-through-timer">SERVE DRIVE-THROUGH</div>
+
+            <div id="telemetry-graph-wrap">
+                <div id="telgraph-header">
+                    <span>TELEMETRY TRACES</span>
+                    <span id="telgraph-mode" style="color:#888;font-size:8px">THR/BRK/RPM</span>
+                </div>
+                <canvas id="telgraph-canvas" width="280" height="90"></canvas>
+            </div>
+
+            <canvas id="g-force-canvas" width="80" height="80"
+                style="position:absolute;bottom:200px;left:50%;transform:translateX(-50%);z-index:5;display:none;border-radius:50%;background:rgba(6,8,14,0.9);border:1px solid #1a2535"></canvas>
+
+            <div id="status-center">
+                <div id="status-title">RACE FINISHED</div>
+                <div id="lights-container">
+                    <div class="light-box">
+                        <div class="light-dot t-light" id="l0"></div>
+                    </div>
+                    <div class="light-box">
+                        <div class="light-dot t-light" id="l1"></div>
+                    </div>
+                    <div class="light-box">
+                        <div class="light-dot t-light" id="l2"></div>
+                    </div>
+                    <div class="light-box">
+                        <div class="light-dot t-light" id="l3"></div>
+                    </div>
+                    <div class="light-box">
+                        <div class="light-dot t-light" id="l4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DRIVER HUD & TELEMETRY BOTTOM PANEL -->
+    <div id="driver-detail">
+        <div id="driver-detail-header">
+            <div id="detail-driver-badge">
+                <div id="detail-team-stripe" style="background:#e10600"></div>
+                <div>
+                    <div id="detail-pos-name">P1 — VER</div>
+                    <div id="detail-team-name">RED BULL RACING</div>
+                </div>
+            </div>
+
+            <!-- EXPANDED CELLS -->
+            <div id="driver-detail-cells">
+                <div class="tel-cell">
+                    <div class="tel-label">Speed</div>
+                    <div class="tel-val green" id="tel-spd">0 KM/H</div>
+                    <div class="tel-bar">
+                        <div class="tel-bar-fill" id="bar-spd" style="background:var(--green)"></div>
+                    </div>
+                </div>
+                <div class="tel-cell" style="min-width:60px">
+                    <div class="tel-label">Gear</div>
+                    <div class="tel-val" id="tel-gear" style="color:var(--yellow)">N</div>
+                    <div class="tel-bar">
+                        <div class="tel-bar-fill" id="bar-rpm" style="background:#b513cf"></div>
+                    </div>
+                </div>
+                <div class="tel-cell">
+                    <div class="tel-label">Throttle</div>
+                    <div class="tel-val green" id="tel-thr">0%</div>
+                    <div class="tel-bar">
+                        <div class="tel-bar-fill" id="bar-thr" style="background:var(--green)"></div>
+                    </div>
+                </div>
+                <div class="tel-cell">
+                    <div class="tel-label">Brake</div>
+                    <div class="tel-val red" id="tel-brk">0%</div>
+                    <div class="tel-bar">
+                        <div class="tel-bar-fill" id="bar-brk" style="background:var(--red)"></div>
+                    </div>
+                </div>
+                <div class="tel-cell" style="min-width:65px">
+                    <div class="tel-label">Tyre Temps °C</div>
+                    <div class="tyre-temps-wrap">
+                        <div class="tt-box" id="tt-fl">--</div>
+                        <div class="tt-box" id="tt-fr">--</div>
+                        <div class="tt-box" id="tt-rl">--</div>
+                        <div class="tt-box" id="tt-rr">--</div>
+                    </div>
+                </div>
+                <div class="tel-cell">
+                    <div class="tel-label">ERS Mode</div>
+                    <div class="tel-val" id="tel-ers" style="color:var(--yellow)">HARV</div>
+                    <div class="tel-bar">
+                        <div class="tel-bar-fill" id="bar-ers" style="background:var(--yellow)"></div>
+                    </div>
+                </div>
+                <div class="tel-cell">
+                    <div class="tel-label">Pace Mode</div>
+                    <div class="tel-val" id="tel-pace" style="color:var(--yellow)">STD</div>
+                </div>
+                <div class="tel-cell">
+                    <div class="tel-label">Tyre Health</div>
+                    <div class="tel-val yellow" id="tel-tyre">100%</div>
+                    <div class="tel-bar">
+                        <div class="tel-bar-fill" id="bar-tyre" style="background:var(--yellow)"></div>
+                    </div>
+                </div>
+                <div class="tel-cell">
+                    <div class="tel-label">Compound</div>
+                    <div class="tel-val" id="tel-tyre-type" style="color:#E8002D;font-size:12px">SOFT</div>
+                </div>
+                <div class="tel-cell">
+                    <div class="tel-label">Gap Ahead</div>
+                    <div class="tel-val" id="tel-gap-ahead">LEADER</div>
+                </div>
+                <div class="tel-cell">
+                    <div class="tel-label">Fuel Load</div>
+                    <div class="tel-val" id="tel-fuel" style="color:var(--orange)">110.0</div>
+                    <div class="tel-bar">
+                        <div class="tel-bar-fill" id="bar-fuel" style="background:var(--orange); width:100%"></div>
+                    </div>
+                </div>
+                <div class="tel-cell">
+                    <div class="tel-label">DRS</div>
+                    <div class="tel-val" id="tel-drs" style="color:var(--yellow)">OFF</div>
+                </div>
+                <div class="tel-cell">
+                    <div class="tel-label">Pits</div>
+                    <div class="tel-val" id="tel-pits" style="color:#aaa; font-size:12px;">STOPS: 0</div>
+                </div>
+                <div class="tel-cell">
+                    <div class="tel-label">Track Limits</div>
+                    <div class="tel-val" id="tel-tl" style="color:#aaa; font-size:11px">CLEAN</div>
+                </div>
+                <div class="tel-cell" style="min-width:75px">
+                    <div class="tel-label">Lateral G</div>
+                    <div class="tel-val" id="tel-latg" style="color:var(--pink)">0.0G</div>
+                    <div class="tel-bar">
+                        <div class="tel-bar-fill" id="bar-latg" style="background:var(--pink)"></div>
+                    </div>
+                </div>
+                <div class="tel-cell" style="min-width:75px">
+                    <div class="tel-label">Slip Angle</div>
+                    <div class="tel-val" id="tel-slip" style="color:var(--orange)">0.0°</div>
+                    <div class="tel-bar">
+                        <div class="tel-bar-fill" id="bar-slip" style="background:var(--orange)"></div>
+                    </div>
+                </div>
+                <div class="tel-cell" style="min-width:75px">
+                    <div class="tel-label">Tyre Cond.</div>
+                    <div class="tel-val" id="tel-tycond" style="font-size:10px;color:#aaa">NOMINAL</div>
+                </div>
+                <div class="tel-cell" style="min-width:75px">
+                    <div class="tel-label">Downforce</div>
+                    <div class="tel-val" id="tel-df" style="color:var(--blue);font-size:11px">0 N</div>
+                </div>
+                <div class="tel-cell" style="min-width:65px">
+                    <div class="tel-label">Tyre PSI</div>
+                    <div id="tel-psi"
+                        style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#888;line-height:1.4">FL:--
+                        FR:--<br>RL:-- RR:--</div>
+                </div>
+            </div>
+            <div id="detail-hint" style="color: #666; font-size: 11px;">← Click a driver</div>
+        </div>
+        <div id="detail-sectors-row">
+            <div class="dsec">
+                <div class="dsec-label">S1</div>
+                <div class="dsec-val" id="ds1-val">—.———</div>
+            </div>
+            <div class="dsec">
+                <div class="dsec-label">S2</div>
+                <div class="dsec-val" id="ds2-val">—.———</div>
+            </div>
+            <div class="dsec">
+                <div class="dsec-label">S3</div>
+                <div class="dsec-val" id="ds3-val">—.———</div>
+            </div>
+            <div class="dsec">
+                <div class="dsec-label">SESSION BEST</div>
+                <div class="dsec-val" id="ds-best" style="color:var(--yellow)">—.———</div>
+            </div>
+            <div class="dsec">
+                <div class="dsec-label">INCIDENTS</div>
+                <div class="dsec-val" id="ds-status" style="color:#aaa">CLEAN</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BETTING INTERFACE OVERLAY (MULTI-DRIVER) -->
+    <div id="bet-modal" class="hidden">
+        <div id="bet-box" style="max-width:520px; width:95vw;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                <h2 style="font-family:'Orbitron', monospace; font-size:16px; color:var(--yellow); margin:0;"><span
+                        style="color:#fff;">F1</span> SPORTSBOOK</h2>
+                <span id="multi-bet-count" style="font-family:'Share Tech Mono'; font-size:10px; color:#555;">Select up
+                    to 4 drivers</span>
+            </div>
+            <p style="color:#888; font-size:10px; font-family:'Share Tech Mono', monospace; margin-bottom:8px;">
+                Multi-bet up to 4 drivers independently. Each bet settled separately.</p>
+
+            <p id="bet-error" style="color:var(--red); font-size:11px; font-weight:bold; margin:6px 0; display:none;">
+            </p>
+
+            <div id="selected-drivers-tags"></div>
+            <div class="driver-select-grid" id="driver-grid" style="max-height:180px;"></div>
+
+            <div
+                style="font-family:'Orbitron', monospace; font-size:9px; color:#555; letter-spacing:1px; margin-top:8px; margin-bottom:4px;">
+                BETTING WINDOW (RACE LAPS)</div>
+            <div class="bet-window-selector" id="bet-window-selector">
+                <button class="bet-window-btn active" data-extra="0">NORMAL (Race Start)</button>
+                <button class="bet-window-btn" data-extra="1">+1 LAP (Adjusted Odds)</button>
+                <button class="bet-window-btn" data-extra="2">+2 LAPS (Lower Odds)</button>
+            </div>
+            <p style="font-size:9px; color:#444; font-family:'Share Tech Mono'; margin-bottom:6px;"
+                id="window-info-txt">Bet before the race. Multipliers apply to your final win.</p>
+
+            <p style="font-size:9px; color:#444; font-family:'Orbitron', monospace; margin:4px 0;">1st [2.0x] · 2nd
+                [1.5x] · 3rd [1.2x] · 4th-5th [1.0x] · 6th-8th [0.5x] · 9th+ [0x]</p>
+
+            <div id="per-driver-amounts" style="display:none;">
+                <div
+                    style="font-family:'Orbitron',monospace;font-size:9px;color:#555;letter-spacing:1px;margin:8px 0 4px;">
+                    STAKE PER DRIVER</div>
+                <div id="driver-amount-rows"></div>
+            </div>
+
+            <div id="bet-summary"
+                style="margin-top:8px; font-family:'Share Tech Mono'; font-size:11px; color:var(--green); text-align:center;">
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:16px;">
+                <button id="submit-bet-btn" class="auth-btn"
+                    style="border-color:var(--yellow); color:var(--yellow); background:rgba(255,215,0,0.1); font-size:13px; padding:10px; flex:1;">LOCK
+                    IN BETS</button>
+                <button id="close-bet-btn" class="auth-btn guest-btn" style="flex:0.35; margin-top:0;">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FASTEST LAP BET BUTTON -->
+    <button id="fl-place-bet-btn">⚡ FASTEST LAP BET</button>
+
+    <!-- FASTEST LAP BET MODAL -->
+    <div id="fl-bet-modal">
+        <div id="fl-bet-box">
+            <h2>⚡ FASTEST LAP BET</h2>
+            <div id="fl-lap-info-badge">LAP — · 50% RETURN ON WIN</div>
+            <p style="color:#555; font-size:9px; font-family:'Share Tech Mono'; margin-bottom:6px;">
+                Pick who sets the fastest lap this lap. Bet closes 15s after lap starts. Win = stake × 1.5</p>
+            <div id="fl-lap-countdown">15</div>
+            <div id="fl-countdown-bar-wrap">
+                <div id="fl-countdown-bar"></div>
+            </div>
+            <p id="fl-bet-error"></p>
+            <div class="fl-driver-grid" id="fl-driver-grid"></div>
+            <div id="fl-bet-amount-wrap">
+                <span style="font-family:'Orbitron',monospace;font-size:10px;color:#aaa;white-space:nowrap;">STAKE
+                    (TKN):</span>
+                <input type="number" id="fl-bet-amount" placeholder="e.g. 2" step="0.5" min="0.5">
+            </div>
+            <div id="fl-bet-preview"></div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+                <button id="fl-submit-btn" class="auth-btn"
+                    style="border-color:var(--pink);color:var(--pink);background:rgba(224,0,156,0.1);flex:1;font-size:12px;padding:9px;">🔒
+                    LOCK IN BET</button>
+                <button id="fl-close-btn" class="auth-btn guest-btn" style="flex:0.35;margin-top:0;">✕</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CASHOUT MODAL -->
+    <div id="cashout-modal" class="hidden">
+        <div id="cashout-box">
+            <h2>⚡ MID-RACE CASHOUT</h2>
+            <p style="color:#888; font-size:10px; font-family:'Share Tech Mono'; margin-bottom:12px;">Cashout returns
+                partial tokens based on your driver's current position. Last 2 laps: cashout locked.</p>
+            <div id="cashout-bets-list"></div>
+            <p id="cashout-msg"
+                style="color:var(--green); font-family:'Share Tech Mono'; font-size:11px; margin:8px 0; min-height:16px; text-align:center;">
+            </p>
+            <button onclick="document.getElementById('cashout-modal').classList.add('hidden')"
+                class="auth-btn guest-btn" style="margin-top:10px; width:100%;">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- BETTING RESULTS OVERLAY (TRIGGERS END OF RACE) -->
+    <div id="bet-results-modal">
+        <div id="bet-results-box">
+            <div class="result-title">BETTING SLIP SETTLED</div>
+            <div id="br-details-wrap"></div>
+            <div class="win-amt">🪙 +<span id="br-winnings">0.0</span></div>
+            <p style="font-family:'Share Tech Mono'; color:#888; font-size:10px;">Token Balance has been automatically
+                updated in your bank.</p>
+            <button id="close-br-btn" class="auth-btn">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- BUY TOKENS MODAL -->
+    <div id="buy-tokens-modal" class="hidden">
+        <div id="buy-tokens-box">
+            <h2>🪙 RECHARGE TOKENS</h2>
+            <p style="color:#666; font-size:9px; font-family:'Share Tech Mono'; margin-bottom:14px;">Select a pack.
+                Payment via UPI / Razorpay.</p>
+            <div class="token-pack" data-tokens="3" data-price="5" onclick="selectPack(this)">
+                <span class="pack-tokens">3 TOKENS</span><span class="pack-price">₹5</span>
+            </div>
+            <div class="token-pack" data-tokens="10" data-price="15" onclick="selectPack(this)">
+                <span class="pack-tokens">10 TOKENS</span><span class="pack-price">₹15 <span
+                        style="color:var(--green); font-size:9px;">POPULAR</span></span>
+            </div>
+            <div class="token-pack" data-tokens="25" data-price="30" onclick="selectPack(this)">
+                <span class="pack-tokens">25 TOKENS</span><span class="pack-price">₹30 <span
+                        style="color:var(--yellow); font-size:9px;">BEST VALUE</span></span>
+            </div>
+            <div class="token-pack" data-tokens="60" data-price="60" onclick="selectPack(this)">
+                <span class="pack-tokens">60 TOKENS</span><span class="pack-price">₹60</span>
+            </div>
+            <button id="buy-tokens-pay-btn" disabled onclick="processPurchase()">PAY NOW</button>
+            <button id="buy-tokens-cancel"
+                onclick="document.getElementById('buy-tokens-modal').classList.add('hidden')">CANCEL</button>
+            <div id="buy-tokens-msg"></div>
+        </div>
+    </div>
+
+    <!-- Add this in your HTML file -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <!-- Script imports in correct sequence -->
+    <script src="js/config.js"></script>
+    <script src="js/helpers.js"></script>
+    <script src="js/models.js"></script>
+    <script src="js/systems.js"></script>
+    <script src="js/physics.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/ui.js"></script>
+</body>
+
+</html>
