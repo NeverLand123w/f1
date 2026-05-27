@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,9 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>F1 PADDOCK — SELECT YOUR CIRCUIT</title>
     <link rel="icon" href="data:,">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
             --red: #ff1e00;
@@ -22,1020 +21,186 @@
             --blur: blur(12px);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Rajdhani', sans-serif;
-            min-height: 100vh;
-            overflow-x: hidden;
-            cursor: default;
-            background-image: radial-gradient(circle at top right, rgba(255, 30, 0, 0.05), transparent 40%),
-                radial-gradient(circle at bottom left, rgba(0, 250, 154, 0.03), transparent 40%);
+            background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif;
+            min-height: 100vh; overflow-x: hidden; cursor: default;
+            background-image: radial-gradient(circle at top right, rgba(255,30,0,0.05), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(0,250,154,0.03), transparent 40%);
         }
 
         body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 1000;
-            opacity: 0.2;
+            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1000; opacity: 0.2;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
         }
 
         header {
-            position: relative;
-            padding: 0 5vw;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--border);
-            z-index: 10;
-            background: rgba(3, 4, 6, 0.8);
-            backdrop-filter: var(--blur);
+            position: relative; padding: 0 5vw; height: 80px; display: flex; align-items: center;
+            justify-content: space-between; border-bottom: 1px solid var(--border); z-index: 10;
+            background: rgba(3,4,6,0.8); backdrop-filter: var(--blur);
         }
 
-        .logo-group {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
+        .logo-group { display: flex; align-items: center; gap: 20px; }
         .f1-badge {
-            background: var(--red);
-            color: #fff;
-            font-family: 'Orbitron', monospace;
-            font-weight: 900;
-            font-size: 20px;
-            letter-spacing: 2px;
-            padding: 6px 16px;
-            transform: skewX(-12deg);
-            box-shadow: 0 4px 15px rgba(255, 30, 0, 0.3);
+            background: var(--red); color: #fff; font-family: 'Orbitron', monospace; font-weight: 900;
+            font-size: 20px; letter-spacing: 2px; padding: 6px 16px; transform: skewX(-12deg);
+            box-shadow: 0 4px 15px rgba(255,30,0,0.3);
         }
 
-        .header-title {
-            font-family: 'Orbitron', monospace;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 4px;
-            color: var(--text);
-            text-transform: uppercase;
-        }
+        .header-title { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; letter-spacing: 4px; color: var(--text); text-transform: uppercase; }
+        .header-right { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 2px; }
+        .header-right span { color: var(--green); font-weight: bold;}
 
-        .header-right {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 12px;
-            color: var(--muted);
-            letter-spacing: 2px;
-        }
-
-        .header-right span {
-            color: var(--green);
-            font-weight: bold;
-        }
-
-        .hero {
-            padding: 80px 5vw 40px;
-            position: relative;
-            overflow: hidden;
-        }
-
+        .hero { padding: 80px 5vw 40px; position: relative; overflow: hidden; }
         .hero::after {
-            content: 'SIMULATOR';
-            position: absolute;
-            right: -2vw;
-            top: 0;
-            font-family: 'Orbitron', monospace;
-            font-size: 14vw;
-            font-weight: 900;
-            color: rgba(255, 255, 255, 0.02);
-            letter-spacing: -2px;
-            pointer-events: none;
+            content: 'SIMULATOR'; position: absolute; right: -2vw; top: 0; font-family: 'Orbitron', monospace;
+            font-size: 14vw; font-weight: 900; color: rgba(255, 255, 255, 0.02); letter-spacing: -2px; pointer-events: none;
         }
 
-        .hero-eyebrow {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 13px;
-            letter-spacing: 4px;
-            color: var(--red);
-            text-transform: uppercase;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 700;
-        }
+        .hero-eyebrow { font-family: 'Share Tech Mono', monospace; font-size: 13px; letter-spacing: 4px; color: var(--red); text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; font-weight: 700;}
+        .hero-eyebrow::before { content: ''; display: block; width: 30px; height: 2px; background: var(--red); box-shadow: 0 0 8px var(--red);}
+        .hero h1 { font-family: 'Orbitron', monospace; font-size: clamp(40px, 6vw, 72px); font-weight: 900; letter-spacing: -1px; line-height: 1.1; margin-bottom: 20px; }
+        .hero h1 em { font-style: normal; color: var(--red); text-shadow: 0 0 20px rgba(255,30,0,0.4); }
+        .hero-sub { font-size: 18px; color: var(--muted); letter-spacing: 1px; font-weight: 500; max-width: 500px; line-height: 1.6;}
 
-        .hero-eyebrow::before {
-            content: '';
-            display: block;
-            width: 30px;
-            height: 2px;
-            background: var(--red);
-            box-shadow: 0 0 8px var(--red);
-        }
+        .ticker { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 12px 0; overflow: hidden; position: relative; background: rgba(0,0,0,0.3); }
+        .ticker-track { display: flex; gap: 60px; animation: ticker 40s linear infinite; white-space: nowrap; width: max-content; }
+        @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .ticker-item { font-family: 'Share Tech Mono', monospace; font-size: 13px; letter-spacing: 2px; color: var(--muted); }
+        .ticker-item .dot { color: var(--red); margin-right: 12px; text-shadow: 0 0 5px var(--red);}
+        .ticker-item .hl { color: var(--gold); font-weight: bold;}
 
-        .hero h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: clamp(40px, 6vw, 72px);
-            font-weight: 900;
-            letter-spacing: -1px;
-            line-height: 1.1;
-            margin-bottom: 20px;
-        }
+        .section-label { padding: 50px 5vw 24px; display: flex; align-items: center; justify-content: space-between; }
+        .section-label h2 { font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 700; letter-spacing: 4px; color: var(--text); text-transform: uppercase; }
+        .section-label .count { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--muted); font-weight: bold;}
 
-        .hero h1 em {
-            font-style: normal;
-            color: var(--red);
-            text-shadow: 0 0 20px rgba(255, 30, 0, 0.4);
-        }
-
-        .hero-sub {
-            font-size: 18px;
-            color: var(--muted);
-            letter-spacing: 1px;
-            font-weight: 500;
-            max-width: 500px;
-            line-height: 1.6;
-        }
-
-        .ticker {
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            padding: 12px 0;
-            overflow: hidden;
-            position: relative;
-            background: rgba(0, 0, 0, 0.3);
-        }
-
-        .ticker-track {
-            display: flex;
-            gap: 60px;
-            animation: ticker 40s linear infinite;
-            white-space: nowrap;
-            width: max-content;
-        }
-
-        @keyframes ticker {
-            from {
-                transform: translateX(0);
-            }
-
-            to {
-                transform: translateX(-50%);
-            }
-        }
-
-        .ticker-item {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 13px;
-            letter-spacing: 2px;
-            color: var(--muted);
-        }
-
-        .ticker-item .dot {
-            color: var(--red);
-            margin-right: 12px;
-            text-shadow: 0 0 5px var(--red);
-        }
-
-        .ticker-item .hl {
-            color: var(--gold);
-            font-weight: bold;
-        }
-
-        .section-label {
-            padding: 50px 5vw 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .section-label h2 {
-            font-family: 'Orbitron', monospace;
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: 4px;
-            color: var(--text);
-            text-transform: uppercase;
-        }
-
-        .section-label .count {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 13px;
-            color: var(--muted);
-            font-weight: bold;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-            gap: 1px;
-            background: var(--border);
-            border: 1px solid var(--border);
-            margin: 0 5vw;
-            border-radius: 8px;
-            overflow: hidden;
-        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); margin: 0 5vw; border-radius: 8px; overflow: hidden;}
 
         /* Modernized Track Cards */
-        .card {
-            position: relative;
-            background: var(--surface);
-            backdrop-filter: var(--blur);
-            overflow: hidden;
-            cursor: pointer;
-            transition: 0.3s;
-            aspect-ratio: 16/10;
-            min-height: 240px;
-        }
-
-        .card:hover {
-            z-index: 2;
-            transform: scale(1.02);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
-            border-radius: 8px;
-            background: rgba(20, 25, 35, 0.9);
-        }
-
+        .card { position: relative; background: var(--surface); backdrop-filter: var(--blur); overflow: hidden; cursor: pointer; transition: 0.3s; aspect-ratio: 16/10; min-height: 240px; }
+        .card:hover { z-index: 2; transform: scale(1.02); box-shadow: 0 20px 40px rgba(0,0,0,0.8); border-radius: 8px; background: rgba(20,25,35,0.9);}
+        
         /* Outline drawing effect heavily improved */
-        .card:hover .card-track svg path {
-            stroke-dashoffset: 0;
-            stroke: rgba(255, 255, 255, 0.8);
-            filter: drop-shadow(0 0 8px currentColor);
-        }
+        .card:hover .card-track svg path { stroke-dashoffset: 0; stroke: rgba(255,255,255,0.8); filter: drop-shadow(0 0 8px currentColor); }
+        .card:hover .card-track svg .drs { stroke: var(--green); filter: drop-shadow(0 0 8px var(--green)); }
+        
+        .card:hover .card-cta { opacity: 1; transform: translateY(0); }
+        .card:hover .flag-stripe { width: 100%; box-shadow: 0 0 15px var(--card-color);}
 
-        .card:hover .card-track svg .drs {
-            stroke: var(--green);
-            filter: drop-shadow(0 0 8px var(--green));
-        }
+        .card-bg { position: absolute; inset: 0; opacity: 0.1; background: radial-gradient(ellipse at 70% 30%, var(--card-color, #fff) 0%, transparent 60%); pointer-events: none; transition: 0.4s; }
+        .card:hover .card-bg { opacity: 0.2; }
 
-        .card:hover .card-cta {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .flag-stripe { position: absolute; bottom: 0; left: 0; height: 3px; width: 0%; background: var(--card-color, var(--red)); transition: width 0.4s cubic-bezier(0.2,0.8,0.2,1); }
 
-        .card:hover .flag-stripe {
-            width: 100%;
-            box-shadow: 0 0 15px var(--card-color);
-        }
+        .card-track { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 30px 110px 30px 30px; pointer-events:none;}
+        .card-track svg { width: 100%; height: 100%; overflow: visible; }
+        .card-track svg path { fill: none; stroke: rgba(255, 255, 255, 0.15); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; transition: 0.3s; }
+        .card-track svg .drs { stroke: rgba(0, 250, 154, 0.2); stroke-width: 8; }
 
-        .card-bg {
-            position: absolute;
-            inset: 0;
-            opacity: 0.1;
-            background: radial-gradient(ellipse at 70% 30%, var(--card-color, #fff) 0%, transparent 60%);
-            pointer-events: none;
-            transition: 0.4s;
-        }
-
-        .card:hover .card-bg {
-            opacity: 0.2;
-        }
-
-        .flag-stripe {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 3px;
-            width: 0%;
-            background: var(--card-color, var(--red));
-            transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-
-        .card-track {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 30px 110px 30px 30px;
-            pointer-events: none;
-        }
-
-        .card-track svg {
-            width: 100%;
-            height: 100%;
-            overflow: visible;
-        }
-
-        .card-track svg path {
-            fill: none;
-            stroke: rgba(255, 255, 255, 0.15);
-            stroke-width: 5;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            transition: 0.3s;
-        }
-
-        .card-track svg .drs {
-            stroke: rgba(0, 250, 154, 0.2);
-            stroke-width: 8;
-        }
-
-        .card-info {
-            position: absolute;
-            right: 0;
-            top: 0;
-            bottom: 0;
-            width: 120px;
-            padding: 20px 16px;
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            background: rgba(0, 0, 0, 0.5);
-            pointer-events: none;
-        }
-
-        .card-round {
-            font-family: 'Orbitron', monospace;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: var(--muted);
-        }
-
-        .card-country {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text);
-            line-height: 1;
-            margin-top: 6px;
-        }
-
-        .card-name {
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--muted);
-            letter-spacing: 1px;
-            margin-top: 4px;
-            text-transform: uppercase;
-            line-height: 1.2;
-        }
-
-        .card-stats {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: auto;
-        }
-
-        .stat-label {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 9px;
-            font-weight: bold;
-            letter-spacing: 1.5px;
-            color: var(--muted);
-        }
-
-        .stat-value {
-            font-family: 'Orbitron', monospace;
-            font-size: 12px;
-            font-weight: 700;
-            color: #fff;
-        }
+        .card-info { position: absolute; right: 0; top: 0; bottom: 0; width: 120px; padding: 20px 16px; border-left: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; background: rgba(0, 0, 0, 0.5); pointer-events:none;}
+        .card-round { font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--muted); }
+        .card-country { font-family: 'Share Tech Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text); line-height: 1; margin-top: 6px; }
+        .card-name { font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 1px; margin-top: 4px; text-transform: uppercase; line-height: 1.2; }
+        .card-stats { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+        .stat-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; font-weight:bold; letter-spacing: 1.5px; color: var(--muted); }
+        .stat-value { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; color: #fff; }
 
         .card-cta {
-            margin-top: 12px;
-            background: var(--red);
-            color: #fff;
-            font-family: 'Orbitron', monospace;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            padding: 8px 0;
-            text-align: center;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            box-shadow: 0 4px 15px rgba(255, 30, 0, 0.4);
-            border-radius: 3px;
+            margin-top: 12px; background: var(--red); color: #fff; font-family: 'Orbitron', monospace;
+            font-size: 10px; font-weight: 700; letter-spacing: 2px; padding: 8px 0; text-align: center;
+            opacity: 0; transform: translateY(10px); transition: 0.3s cubic-bezier(0.2,0.8,0.2,1);
+            box-shadow: 0 4px 15px rgba(255,30,0,0.4); border-radius: 3px;
         }
 
-        .card.featured {
-            grid-column: span 2;
-            aspect-ratio: 21/9;
-        }
+        .card.featured { grid-column: span 2; aspect-ratio: 21/9; }
+        .card.featured .card-track { padding-right: 150px; }
+        .card.featured .card-info { width: 150px; padding: 24px 20px; }
+        .card.featured .card-country { font-size: 26px; }
 
-        .card.featured .card-track {
-            padding-right: 150px;
-        }
+        footer { margin: 60px 5vw 0; padding: 30px 0; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: rgba(3,4,6,0.8); backdrop-filter: var(--blur);}
+        .footer-left { font-family: 'Orbitron', monospace; font-weight:700; font-size: 11px; color: var(--muted); letter-spacing: 2px; }
+        .footer-right { display: flex; gap: 40px; font-family: 'Share Tech Mono', monospace; font-weight:bold; font-size: 12px; color: var(--muted); letter-spacing: 1.5px; }
 
-        .card.featured .card-info {
-            width: 150px;
-            padding: 24px 20px;
-        }
+        .scanlines { position: fixed; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.05) 2px, rgba(0, 0, 0, 0.05) 4px); pointer-events: none; z-index: 999; }
 
-        .card.featured .card-country {
-            font-size: 26px;
-        }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .hero { animation: fadeUp 0.6s cubic-bezier(0.2,0.8,0.2,1) both; }
+        .section-label { animation: fadeUp 0.6s cubic-bezier(0.2,0.8,0.2,1) 0.1s both; }
+        .card { animation: fadeUp 0.6s cubic-bezier(0.2,0.8,0.2,1) both; }
+        .card:nth-child(1) { animation-delay: 0.1s; } .card:nth-child(2) { animation-delay: 0.15s; }
+        .card:nth-child(3) { animation-delay: 0.2s; } .card:nth-child(4) { animation-delay: 0.25s; }
+        .card:nth-child(5) { animation-delay: 0.3s; } .card:nth-child(6) { animation-delay: 0.35s; }
 
-        footer {
-            margin: 60px 5vw 0;
-            padding: 30px 0;
-            border-top: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: rgba(3, 4, 6, 0.8);
-            backdrop-filter: var(--blur);
-        }
+        .race-flash { position: fixed; inset: 0; background: var(--red); z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.1s; }
+        .race-flash.active { animation: flashOut 0.8s ease forwards; }
+        @keyframes flashOut { 0% { opacity: 1; } 100% { opacity: 0; } }
 
-        .footer-left {
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 11px;
-            color: var(--muted);
-            letter-spacing: 2px;
-        }
+        .difficulty { position: absolute; top: 16px; left: 16px; font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 700; letter-spacing: 2px; padding: 4px 10px; border: 1px solid; border-radius: 4px; text-transform: uppercase; background: var(--surface); backdrop-filter: blur(4px);}
+        .difficulty.easy { color: var(--green); border-color: rgba(0,250,154,0.3); }
+        .difficulty.medium { color: var(--gold); border-color: rgba(255,214,0,0.3); }
+        .difficulty.hard { color: var(--red); border-color: rgba(255,30,0,0.3); }
 
-        .footer-right {
-            display: flex;
-            gap: 40px;
-            font-family: 'Share Tech Mono', monospace;
-            font-weight: bold;
-            font-size: 12px;
-            color: var(--muted);
-            letter-spacing: 1.5px;
-        }
-
-        .scanlines {
-            position: fixed;
-            inset: 0;
-            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.05) 2px, rgba(0, 0, 0, 0.05) 4px);
-            pointer-events: none;
-            z-index: 999;
-        }
-
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .hero {
-            animation: fadeUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-        }
-
-        .section-label {
-            animation: fadeUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both;
-        }
-
-        .card {
-            animation: fadeUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-        }
-
-        .card:nth-child(1) {
-            animation-delay: 0.1s;
-        }
-
-        .card:nth-child(2) {
-            animation-delay: 0.15s;
-        }
-
-        .card:nth-child(3) {
-            animation-delay: 0.2s;
-        }
-
-        .card:nth-child(4) {
-            animation-delay: 0.25s;
-        }
-
-        .card:nth-child(5) {
-            animation-delay: 0.3s;
-        }
-
-        .card:nth-child(6) {
-            animation-delay: 0.35s;
-        }
-
-        .race-flash {
-            position: fixed;
-            inset: 0;
-            background: var(--red);
-            z-index: 9999;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.1s;
-        }
-
-        .race-flash.active {
-            animation: flashOut 0.8s ease forwards;
-        }
-
-        @keyframes flashOut {
-            0% {
-                opacity: 1;
-            }
-
-            100% {
-                opacity: 0;
-            }
-        }
-
-        .difficulty {
-            position: absolute;
-            top: 16px;
-            left: 16px;
-            font-family: 'Orbitron', monospace;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            padding: 4px 10px;
-            border: 1px solid;
-            border-radius: 4px;
-            text-transform: uppercase;
-            background: var(--surface);
-            backdrop-filter: blur(4px);
-        }
-
-        .difficulty.easy {
-            color: var(--green);
-            border-color: rgba(0, 250, 154, 0.3);
-        }
-
-        .difficulty.medium {
-            color: var(--gold);
-            border-color: rgba(255, 214, 0, 0.3);
-        }
-
-        .difficulty.hard {
-            color: var(--red);
-            border-color: rgba(255, 30, 0, 0.3);
-        }
-
-        .lap-selector {
-            padding: 0 5vw 10px;
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            margin-top: -20px;
-        }
-
-        .lap-selector label {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 13px;
-            font-weight: bold;
-            letter-spacing: 3px;
-            color: var(--muted);
-            text-transform: uppercase;
-        }
-
-        .lap-btns {
-            display: flex;
-            gap: 8px;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 4px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-        }
-
-        .lap-btn,
-        .s-lap-btn {
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--muted);
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 11px;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            letter-spacing: 1px;
-            transition: 0.2s;
-        }
-
-        .lap-btn:hover,
-        .s-lap-btn:hover,
-        .lap-btn.active,
-        .s-lap-btn.active {
-            background: rgba(255, 30, 0, 0.1);
-            border-color: var(--red);
-            color: #fff;
-            box-shadow: 0 0 15px rgba(255, 30, 0, 0.3);
-        }
-
-        .s-lap-btn {
-            border-color: var(--border);
-        }
-
-        /* Settings modal specific */
+        .lap-selector { padding: 0 5vw 10px; display: flex; align-items: center; gap: 24px; margin-top:-20px;}
+        .lap-selector label { font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight:bold; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+        .lap-btns { display: flex; gap: 8px; background: rgba(0,0,0,0.4); padding: 4px; border-radius: 6px; border: 1px solid var(--border);}
+        .lap-btn, .s-lap-btn { background: transparent; border: 1px solid transparent; color: var(--muted); font-family: 'Orbitron', monospace; font-weight:700; font-size: 11px; padding: 8px 16px; border-radius: 4px; cursor: pointer; letter-spacing: 1px; transition: 0.2s; }
+        .lap-btn:hover, .s-lap-btn:hover, .lap-btn.active, .s-lap-btn.active { background: rgba(255,30,0,0.1); border-color: var(--red); color: #fff; box-shadow: 0 0 15px rgba(255,30,0,0.3); }
+        .s-lap-btn { border-color: var(--border); } /* Settings modal specific */
 
         /* Overlays & Modals matched to glassmorphism UI */
-        #race-resume-banner {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 9000;
-            background: rgba(10, 4, 4, 0.95);
-            backdrop-filter: var(--blur);
-            border-top: 2px solid var(--red);
-            padding: 20px 5vw;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-            box-shadow: 0 -10px 40px rgba(255, 0, 0, 0.2);
-        }
+        #race-resume-banner { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9000; background: rgba(10,4,4,0.95); backdrop-filter: var(--blur); border-top: 2px solid var(--red); padding: 20px 5vw; align-items: center; justify-content: space-between; gap: 20px; box-shadow: 0 -10px 40px rgba(255,0,0,0.2);}
+        .resume-banner-msg { font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 700; color: var(--red); letter-spacing: 3px; text-shadow: 0 0 15px var(--red);}
+        .resume-banner-sub { font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight:500; color: #aaa; margin-top: 6px; }
+        .resume-btn { background: var(--red); color: #fff; border: none; padding: 12px 30px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 12px; letter-spacing: 2px; cursor: pointer; border-radius: 4px; white-space: nowrap; flex-shrink: 0; box-shadow: 0 0 20px rgba(255,30,0,0.4); transition:0.3s;}
+        .resume-btn:hover { background: #ff3311; transform: scale(1.02); }
+        .terminate-btn { background: transparent; border: 1px solid #444; color: #777; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 11px; letter-spacing: 2px; padding: 12px 24px; border-radius: 4px; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .terminate-btn:hover { border-color: var(--red); color: var(--red); box-shadow: 0 0 12px rgba(255,30,0,0.2); }
 
-        .resume-banner-msg {
-            font-family: 'Orbitron', monospace;
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--red);
-            letter-spacing: 3px;
-            text-shadow: 0 0 15px var(--red);
-        }
+        #race-blocker-overlay, #race-settings-modal { display: none; position: fixed; inset: 0; z-index: 9998; background: rgba(0, 0, 0, 0.85); backdrop-filter: var(--blur); align-items: center; justify-content: center; }
+        .blocker-box, .settings-box { background: #0a0c10; border: 1px solid var(--border); border-radius: 12px; padding: 40px 48px; text-align: center; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+        .blocker-box { border-top: 3px solid var(--red); box-shadow: 0 -2px 30px rgba(255,30,0,0.1), 0 20px 60px rgba(0,0,0,0.8); }
+        .blocker-box h3 { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700; color: var(--red); letter-spacing: 3px; margin-bottom: 16px; }
+        .blocker-box p { color: var(--muted); font-size: 15px; margin-bottom: 30px; line-height: 1.6; }
+        .blocker-btns { display: flex; gap: 16px; justify-content: center; }
+        .blocker-btn { padding: 12px 24px; border-radius: 6px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: 0.2s;}
+        .blocker-btn.primary { background: rgba(255,30,0,0.1); color: var(--red); border: 1px solid var(--red); box-shadow: 0 0 15px rgba(255,30,0,0.2);}
+        .blocker-btn.primary:hover { background: var(--red); color: #fff; box-shadow: 0 0 25px rgba(255,30,0,0.4);}
+        .blocker-btn.secondary { background: transparent; color: var(--muted); border: 1px solid #333; }
+        .blocker-btn.secondary:hover { color:#fff; border-color:#fff;}
 
-        .resume-banner-sub {
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 14px;
-            font-weight: 500;
-            color: #aaa;
-            margin-top: 6px;
-        }
-
-        .resume-btn {
-            background: var(--red);
-            color: #fff;
-            border: none;
-            padding: 12px 30px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 12px;
-            letter-spacing: 2px;
-            cursor: pointer;
-            border-radius: 4px;
-            white-space: nowrap;
-            flex-shrink: 0;
-            box-shadow: 0 0 20px rgba(255, 30, 0, 0.4);
-            transition: 0.3s;
-        }
-
-        .resume-btn:hover {
-            background: #ff3311;
-            transform: scale(1.02);
-        }
-
-        .terminate-btn {
-            background: transparent;
-            border: 1px solid #444;
-            color: #777;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 11px;
-            letter-spacing: 2px;
-            padding: 12px 24px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: 0.2s;
-            white-space: nowrap;
-        }
-
-        .terminate-btn:hover {
-            border-color: var(--red);
-            color: var(--red);
-            box-shadow: 0 0 12px rgba(255, 30, 0, 0.2);
-        }
-
-        #race-blocker-overlay,
-        #race-settings-modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 9998;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: var(--blur);
-            align-items: center;
-            justify-content: center;
-        }
-
-        .blocker-box,
-        .settings-box {
-            background: #0a0c10;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 40px 48px;
-            text-align: center;
-            max-width: 480px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-        }
-
-        .blocker-box {
-            border-top: 3px solid var(--red);
-            box-shadow: 0 -2px 30px rgba(255, 30, 0, 0.1), 0 20px 60px rgba(0, 0, 0, 0.8);
-        }
-
-        .blocker-box h3 {
-            font-family: 'Orbitron', monospace;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--red);
-            letter-spacing: 3px;
-            margin-bottom: 16px;
-        }
-
-        .blocker-box p {
-            color: var(--muted);
-            font-size: 15px;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-
-        .blocker-btns {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
-        }
-
-        .blocker-btn {
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 11px;
-            letter-spacing: 2px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .blocker-btn.primary {
-            background: rgba(255, 30, 0, 0.1);
-            color: var(--red);
-            border: 1px solid var(--red);
-            box-shadow: 0 0 15px rgba(255, 30, 0, 0.2);
-        }
-
-        .blocker-btn.primary:hover {
-            background: var(--red);
-            color: #fff;
-            box-shadow: 0 0 25px rgba(255, 30, 0, 0.4);
-        }
-
-        .blocker-btn.secondary {
-            background: transparent;
-            color: var(--muted);
-            border: 1px solid #333;
-        }
-
-        .blocker-btn.secondary:hover {
-            color: #fff;
-            border-color: #fff;
-        }
-
-        .settings-box {
-            border-top: 3px solid var(--green);
-            text-align: left;
-            box-shadow: 0 -2px 30px rgba(0, 250, 154, 0.1), 0 20px 60px rgba(0, 0, 0, 0.8);
-        }
-
-        .settings-box h3 {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 12px;
-            font-weight: bold;
-            letter-spacing: 4px;
-            color: var(--green);
-            margin-bottom: 8px;
-        }
-
-        .settings-box h4 {
-            font-family: 'Orbitron', monospace;
-            font-size: 24px;
-            font-weight: 900;
-            color: #fff;
-            margin-bottom: 30px;
-            letter-spacing: 1px;
-        }
-
-        .settings-label {
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 10px;
-            letter-spacing: 3px;
-            color: var(--muted);
-            margin-bottom: 12px;
-        }
-
-        .settings-lap-btns {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 36px;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 4px;
-            border-radius: 6px;
-        }
-
-        .settings-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .settings-confirm {
-            flex: 1;
-            background: rgba(0, 250, 154, 0.1);
-            color: var(--green);
-            border: 1px solid var(--green);
-            border-radius: 6px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 12px;
-            letter-spacing: 2px;
-            padding: 14px;
-            cursor: pointer;
-            transition: 0.2s;
-            text-shadow: 0 0 10px rgba(0, 250, 154, 0.4);
-        }
-
-        .settings-confirm:hover {
-            background: var(--green);
-            color: #000;
-            box-shadow: 0 0 25px var(--green);
-        }
-
-        .settings-cancel {
-            background: transparent;
-            color: var(--muted);
-            border: 1px solid #333;
-            border-radius: 6px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 11px;
-            letter-spacing: 2px;
-            padding: 14px 24px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .settings-cancel:hover {
-            border-color: #fff;
-            color: #fff;
-        }
+        .settings-box { border-top: 3px solid var(--green); text-align: left; box-shadow: 0 -2px 30px rgba(0,250,154,0.1), 0 20px 60px rgba(0,0,0,0.8);}
+        .settings-box h3 { font-family: 'Share Tech Mono', monospace; font-size: 12px; font-weight:bold; letter-spacing: 4px; color: var(--green); margin-bottom: 8px; }
+        .settings-box h4 { font-family: 'Orbitron', monospace; font-size: 24px; font-weight:900; color: #fff; margin-bottom: 30px; letter-spacing: 1px; }
+        .settings-label { font-family: 'Orbitron', monospace; font-weight:700; font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-bottom: 12px; }
+        .settings-lap-btns { display: flex; gap: 8px; margin-bottom: 36px; background:rgba(0,0,0,0.3); padding:4px; border-radius:6px;}
+        .settings-actions { display: flex; gap: 12px; }
+        .settings-confirm { flex: 1; background: rgba(0,250,154,0.1); color: var(--green); border: 1px solid var(--green); border-radius: 6px; font-family: 'Orbitron', monospace; font-weight:700; font-size: 12px; letter-spacing: 2px; padding: 14px; cursor: pointer; transition:0.2s; text-shadow:0 0 10px rgba(0,250,154,0.4);}
+        .settings-confirm:hover { background: var(--green); color: #000; box-shadow: 0 0 25px var(--green); }
+        .settings-cancel { background: transparent; color: var(--muted); border: 1px solid #333; border-radius: 6px; font-family: 'Orbitron', monospace; font-weight:700; font-size: 11px; letter-spacing: 2px; padding: 14px 24px; cursor: pointer; transition:0.2s;}
+        .settings-cancel:hover { border-color:#fff; color:#fff;}
 
         /* ── User bar ─────────────────────────────────────────────────────── */
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .season-info {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 12px;
-            color: var(--muted);
-            letter-spacing: 2px;
-        }
-
-        .season-info .hl {
-            color: var(--green);
-            font-weight: bold;
-        }
-
-        .user-bar {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border);
-            border-radius: 40px;
-            padding: 6px 6px 6px 14px;
-            backdrop-filter: blur(8px);
-        }
-
-        .user-avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: var(--red);
-            color: #fff;
-            font-family: 'Orbitron', monospace;
-            font-weight: 900;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            text-transform: uppercase;
-            box-shadow: 0 0 12px rgba(255, 30, 0, 0.3);
-        }
-
-        .user-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .user-name {
-            font-family: 'Orbitron', monospace;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            color: var(--text);
-            text-transform: uppercase;
-            line-height: 1;
-        }
-
-        .user-tokens {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 11px;
-            color: var(--green);
-            letter-spacing: 1px;
-            line-height: 1;
-        }
-
-        .logout-btn {
-            background: rgba(255, 30, 0, 0.08);
-            border: 1px solid rgba(255, 30, 0, 0.25);
-            color: var(--red);
-            font-family: 'Orbitron', monospace;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            padding: 7px 14px;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: 0.2s;
-            white-space: nowrap;
-        }
-
-        .logout-btn:hover {
-            background: var(--red);
-            color: #fff;
-            box-shadow: 0 0 16px rgba(255, 30, 0, 0.4);
-        }
-
-        .login-btn {
-            background: rgba(0, 250, 154, 0.08);
-            border: 1px solid rgba(0, 250, 154, 0.3);
-            color: var(--green);
-            font-family: 'Orbitron', monospace;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            padding: 10px 20px;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .login-btn:hover {
-            background: var(--green);
-            color: #000;
-            box-shadow: 0 0 20px rgba(0, 250, 154, 0.4);
-        }
-
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .season-info { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 2px; }
+        .season-info .hl { color: var(--green); font-weight: bold; }
+        .user-bar { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 40px; padding: 6px 6px 6px 14px; backdrop-filter: blur(8px); }
+        .user-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--red); color: #fff; font-family: 'Orbitron', monospace; font-weight: 900; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; text-transform: uppercase; box-shadow: 0 0 12px rgba(255,30,0,0.3); }
+        .user-meta { display: flex; flex-direction: column; gap: 2px; }
+        .user-name { font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text); text-transform: uppercase; line-height: 1; }
+        .user-tokens { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--green); letter-spacing: 1px; line-height: 1; }
+        .logout-btn { background: rgba(255,30,0,0.08); border: 1px solid rgba(255,30,0,0.25); color: var(--red); font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; padding: 7px 14px; border-radius: 30px; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .logout-btn:hover { background: var(--red); color: #fff; box-shadow: 0 0 16px rgba(255,30,0,0.4); }
+        .login-btn { background: rgba(0,250,154,0.08); border: 1px solid rgba(0,250,154,0.3); color: var(--green); font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; letter-spacing: 2px; padding: 10px 20px; border-radius: 30px; cursor: pointer; transition: 0.2s; }
+        .login-btn:hover { background: var(--green); color: #000; box-shadow: 0 0 20px rgba(0,250,154,0.4); }
         /* ── Toast ──────────────────────────────────────────────────────────── */
-        #toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: rgba(10, 12, 17, 0.95);
-            border: 1px solid var(--border);
-            border-left: 3px solid var(--green);
-            border-radius: 8px;
-            padding: 14px 20px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 13px;
-            color: var(--text);
-            letter-spacing: 1px;
-            z-index: 99999;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: 0.3s;
-            pointer-events: none;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
-        }
-
-        #toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        #toast.error {
-            border-left-color: var(--red);
-        }
+        #toast { position: fixed; bottom: 30px; right: 30px; background: rgba(10,12,17,0.95); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 8px; padding: 14px 20px; font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text); letter-spacing: 1px; z-index: 99999; opacity: 0; transform: translateY(10px); transition: 0.3s; pointer-events: none; backdrop-filter: blur(12px); box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
+        #toast.show { opacity: 1; transform: translateY(0); }
+        #toast.error { border-left-color: var(--red); }
     </style>
 </head>
 
 <!-- Body logic and scripts perfectly retained below -->
-
 <body>
     <div class="scanlines"></div>
     <div class="race-flash" id="flash"></div>
@@ -1066,8 +231,7 @@
     <div class="hero">
         <div class="hero-eyebrow">Race Weekend</div>
         <h1>SELECT YOUR<br><em>CIRCUIT</em></h1>
-        <p class="hero-sub">Initialize the simulator engine. Adjust race distance, study the track layout, and commit to
-            the starting grid.</p>
+        <p class="hero-sub">Initialize the simulator engine. Adjust race distance, study the track layout, and commit to the starting grid.</p>
     </div>
 
     <div class="lap-selector">
@@ -1103,8 +267,7 @@
             <div class="resume-banner-sub">Return to your active Grand Prix to continue the simulation.</div>
         </div>
         <div style="display:flex;gap:12px;flex-shrink:0;align-items:center;">
-            <button class="terminate-btn" id="banner-terminate-btn" onclick="terminateRace()" style="display:none;">✕
-                TERMINATE</button>
+            <button class="terminate-btn" id="banner-terminate-btn" onclick="terminateRace()" style="display:none;">✕ TERMINATE</button>
             <button class="resume-btn" onclick="window.location.href='game'">↩ ENTER RACE</button>
         </div>
     </div>
@@ -1113,12 +276,10 @@
     <div id="race-blocker-overlay">
         <div class="blocker-box">
             <h3>🚦 ACCESS DENIED</h3>
-            <p id="blocker-msg">You cannot start a new race while a session is active. Return to your current race or
-                abandon it to begin a new session.</p>
+            <p id="blocker-msg">You cannot start a new race while a session is active. Return to your current race or abandon it to begin a new session.</p>
             <div class="blocker-btns">
                 <button class="blocker-btn primary" onclick="window.location.href='game'">↩ ENTER RACE</button>
-                <button id="blocker-abandon-btn" class="blocker-btn secondary" onclick="abandonRace()">ABANDON
-                    DATA</button>
+                <button id="blocker-abandon-btn" class="blocker-btn secondary" onclick="abandonRace()">ABANDON DATA</button>
             </div>
         </div>
     </div>
@@ -1137,8 +298,7 @@
             </div>
             <div class="settings-actions">
                 <button class="settings-confirm" onclick="confirmLaunch()">INITIALIZE ENGINE</button>
-                <button class="settings-cancel"
-                    onclick="document.getElementById('race-settings-modal').style.display='none'">CANCEL</button>
+                <button class="settings-cancel" onclick="document.getElementById('race-settings-modal').style.display='none'">CANCEL</button>
             </div>
         </div>
     </div>
@@ -1147,78 +307,78 @@
     <div id="toast"></div>
 
     <script>
-        // ── Home page user session ─────────────────────────────────────────────
-        (function () {
-            const token = localStorage.getItem('f1_token');
-            const username = localStorage.getItem('f1_username');
-            const tokens = localStorage.getItem('f1_display_tokens');
-            const userBar = document.getElementById('user-bar');
-            const loginBtn = document.getElementById('login-btn-home');
-            const avatar = document.getElementById('user-avatar');
-            const nameEl = document.getElementById('user-name-display');
-            const tkEl = document.getElementById('user-tokens-display');
+    // ── Home page user session ─────────────────────────────────────────────
+    (function() {
+        const token    = localStorage.getItem('f1_token');
+        const username = localStorage.getItem('f1_username');
+        const tokens   = localStorage.getItem('f1_display_tokens');
+        const userBar  = document.getElementById('user-bar');
+        const loginBtn = document.getElementById('login-btn-home');
+        const avatar   = document.getElementById('user-avatar');
+        const nameEl   = document.getElementById('user-name-display');
+        const tkEl     = document.getElementById('user-tokens-display');
 
-            function showUser(name, tkns) {
-                avatar.textContent = name.charAt(0).toUpperCase();
-                nameEl.textContent = name.toUpperCase();
-                tkEl.textContent = Number(tkns || 0).toFixed(1) + ' TKN';
-                userBar.style.display = 'flex';
-                loginBtn.style.display = 'none';
-            }
-            function showLogin() {
-                userBar.style.display = 'none';
-                loginBtn.style.display = 'block';
-            }
-
-            if (token && username) {
-                showUser(username, tokens || 0);
-                fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + token } })
-                    .then(r => r.json())
-                    .then(d => {
-                        if (d.username) {
-                            localStorage.setItem('f1_username', d.username);
-                            localStorage.setItem('f1_display_tokens', d.tokens);
-                            showUser(d.username, d.tokens);
-                        } else {
-                            localStorage.removeItem('f1_token');
-                            localStorage.removeItem('f1_username');
-                            localStorage.removeItem('f1_display_tokens');
-                            showLogin();
-                        }
-                    }).catch(() => { });
-            } else {
-                showLogin();
-            }
-
-            document.getElementById('logout-btn').addEventListener('click', () => {
-                // Block logout if a race is in progress
-                try {
-                    const snap = JSON.parse(localStorage.getItem('f1_race_snapshot') || 'null');
-                    const activeStates = ['GREEN', 'SC', 'VSC', 'FORMATION', 'GRID_WAIT', 'GRID_PREP'];
-                    if (snap && snap.v === 2 && activeStates.includes(snap.state)) {
-                        showToast('Race in progress — finish or terminate first', 'error');
-                        return;
-                    }
-                } catch (e) { }
-                localStorage.removeItem('f1_token');
-                localStorage.removeItem('f1_username');
-                localStorage.removeItem('f1_display_tokens');
-                showToast('Signed out. See you on track.');
-                setTimeout(showLogin, 600);
-            });
-
-            document.getElementById('login-btn-home').addEventListener('click', () => {
-                window.location.href = 'game';
-            });
-        })();
-
-        function showToast(msg, isError) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = 'show' + (isError ? ' error' : '');
-            clearTimeout(window._tt);
-            window._tt = setTimeout(() => { t.className = ''; }, 3000);
+        function showUser(name, tkns) {
+            avatar.textContent = name.charAt(0).toUpperCase();
+            nameEl.textContent = name.toUpperCase();
+            tkEl.textContent   = Number(tkns || 0).toFixed(1) + ' TKN';
+            userBar.style.display = 'flex';
+            loginBtn.style.display = 'none';
         }
+        function showLogin() {
+            userBar.style.display = 'none';
+            loginBtn.style.display = 'block';
+        }
+
+        if (token && username) {
+            showUser(username, tokens || 0);
+            fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + token } })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.username) {
+                        localStorage.setItem('f1_username', d.username);
+                        localStorage.setItem('f1_display_tokens', d.tokens);
+                        showUser(d.username, d.tokens);
+                    } else {
+                        localStorage.removeItem('f1_token');
+                        localStorage.removeItem('f1_username');
+                        localStorage.removeItem('f1_display_tokens');
+                        showLogin();
+                    }
+                }).catch(() => {});
+        } else {
+            showLogin();
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            // Block logout if a race is in progress
+            try {
+                const snap = JSON.parse(localStorage.getItem('f1_race_snapshot') || 'null');
+                const activeStates = ['GREEN', 'SC', 'VSC', 'FORMATION', 'GRID_WAIT', 'GRID_PREP'];
+                if (snap && snap.v === 2 && activeStates.includes(snap.state)) {
+                    showToast('Race in progress — finish or terminate first', 'error');
+                    return;
+                }
+            } catch(e) {}
+            localStorage.removeItem('f1_token');
+            localStorage.removeItem('f1_username');
+            localStorage.removeItem('f1_display_tokens');
+            showToast('Signed out. See you on track.');
+            setTimeout(showLogin, 600);
+        });
+
+        document.getElementById('login-btn-home').addEventListener('click', () => {
+            window.location.href = 'game';
+        });
+    })();
+
+    function showToast(msg, isError) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'show' + (isError ? ' error' : '');
+        clearTimeout(window._tt);
+        window._tt = setTimeout(() => { t.className = ''; }, 3000);
+    }
     </script>
 
     <script>
@@ -1286,7 +446,7 @@
                 // Sync settings modal buttons
                 document.querySelectorAll('.s-lap-btn').forEach(b => {
                     b.classList.remove('active');
-                    if (parseInt(b.dataset.laps) === selectedLaps) b.classList.add('active');
+                    if(parseInt(b.dataset.laps) === selectedLaps) b.classList.add('active');
                 });
             });
         });
@@ -1347,7 +507,7 @@
 
         function showRaceBlocker() {
             const hasBet = localStorage.getItem('f1_has_bet') === '1';
-            document.getElementById('blocker-msg').innerHTML = hasBet
+            document.getElementById('blocker-msg').innerHTML = hasBet 
                 ? 'You have an active bet placed. The race <strong style="color:var(--red);">MUST FINISH</strong> before you can start a new one to prevent token fraud.'
                 : 'Session already active. Resume to track, or permanently abandon the current simulation data.';
             document.getElementById('blocker-abandon-btn').style.display = hasBet ? 'none' : '';
@@ -1384,7 +544,7 @@
                 // Keep background lap selector synced
                 document.querySelectorAll('.lap-btn').forEach(b => {
                     b.classList.remove('active');
-                    if (parseInt(b.dataset.laps) === selectedLaps) b.classList.add('active');
+                    if(parseInt(b.dataset.laps) === selectedLaps) b.classList.add('active');
                 });
             });
         });
@@ -1419,5 +579,4 @@
         }
     </script>
 </body>
-
 </html>

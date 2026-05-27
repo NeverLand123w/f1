@@ -293,7 +293,6 @@ window.payWithRazorpay = async function (priceInRupees, tokenAmount) {
                 } else {
                     showToast(result.message || 'Verification failed', 'error');
                 }
-                location.reload();
             },
             prefill: { name: AUTH_STATE.username },
             theme: { color: '#00d2be' }

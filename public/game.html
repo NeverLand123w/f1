@@ -67,13 +67,20 @@
         </div>
     </div>
 
-    <!-- Immediately hide qualifying modal if a mid-race snapshot exists (before any JS runs) -->
+    <!-- Immediately hide qualifying modal if a mid-race or mid-qualifying snapshot exists (before any JS runs) -->
     <script>
         (function () {
             try {
                 var snap = JSON.parse(localStorage.getItem('f1_race_snapshot') || 'null');
                 var raceStates = ['GREEN', 'SC', 'VSC', 'FORMATION', 'GRID_WAIT'];
                 if (snap && snap.v === 2 && raceStates.indexOf(snap.state) !== -1) {
+                    var m = document.getElementById('skip-qual-modal');
+                    if (m) m.style.display = 'none';
+                }
+            } catch (e) { }
+            try {
+                var qsnap = JSON.parse(localStorage.getItem('f1_qual_snapshot') || 'null');
+                if (qsnap && qsnap.v === 1 && qsnap.state === 'QUALIFYING') {
                     var m = document.getElementById('skip-qual-modal');
                     if (m) m.style.display = 'none';
                 }
