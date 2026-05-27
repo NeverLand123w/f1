@@ -88,6 +88,17 @@ function initAuth() {
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message);
 
+                // Handle 2FA bypass — server returns token directly (e.g. test/Razorpay account)
+                if (data.token) {
+                    localStorage.setItem('f1_token', data.token);
+                    localStorage.setItem('f1_username', data.username);
+                    localStorage.setItem('f1_display_tokens', data.tokens);
+                    AUTH_STATE.token = data.token;
+                    updateUserInterface(data.username, data.tokens);
+                    modal.classList.add('hidden');
+                    return;
+                }
+
                 AUTH_STATE.stage = '2FA';
                 stageCreds.style.display = 'none';
                 stageEnter.style.display = 'block';
@@ -339,9 +350,9 @@ function isRaceActive() {
 
 function safeGoHome() {
     if (isRaceActive()) {
-        sessionStorage.setItem('f1_race_running', '1'); window.location.href = 'index.html';
+        sessionStorage.setItem('f1_race_running', '1'); window.location.href = 'index';
     } else {
-        sessionStorage.removeItem('f1_race_running'); window.location.href = 'index.html';
+        sessionStorage.removeItem('f1_race_running'); window.location.href = 'index';
     }
 }
 

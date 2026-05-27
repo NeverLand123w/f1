@@ -116,6 +116,18 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ message: 'Username already taken!' });
 
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        // ── TEST ACCOUNT: skip 2FA setup entirely ────────────────────────────
+        const testAccount = process.env.TEST_ACCOUNT || '';
+        if (testAccount && username === testAccount) {
+            await db.execute({
+                sql: 'INSERT INTO users (username, password, twoFactorSecret, is2faEnabled) VALUES (?, ?, ?, ?)',
+                args: [username, hashedPassword, '', 0]
+            });
+            return res.json({ message: 'Registered', username });
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         const secret = speakeasy.generateSecret({ name: `F1 Paddock (${username})` });
 
         await db.execute({
@@ -171,6 +183,14 @@ app.post('/api/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch)
             return res.status(400).json({ message: 'Wrong password.' });
+
+        // ── TEST ACCOUNT: skip 2FA, issue token directly ─────────────────────
+        const testAccount = process.env.TEST_ACCOUNT || '';
+        if (testAccount && username === testAccount) {
+            const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET);
+            return res.json({ token, tokens: user.tokens, username: user.username });
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         res.json({ message: 'Require 2FA', username });
     } catch (err) {
