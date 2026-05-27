@@ -1,6 +1,26 @@
 {
+  "version": 2,
   "cleanUrls": true,
-  "rewrites": [
-    { "source": "/", "destination": "/home.html" }
+  "builds": [
+    { "src": "api/*.js", "use": "@vercel/node" },
+    { "src": "public/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/auth/(.*)", "dest": "/api/auth.js" },
+    { "src": "/api/me", "dest": "/api/me.js" },
+    { "src": "/api/bet", "dest": "/api/bet.js" },
+    { "src": "/api/cashout", "dest": "/api/cashout.js" },
+    { "src": "/api/login", "dest": "/api/auth.js" },
+    { "src": "/api/login-verify", "dest": "/api/auth.js" },
+    { "src": "/api/register", "dest": "/api/auth.js" },
+    { "src": "/api/verify-registration-2fa", "dest": "/api/auth.js" },
+    { "src": "/api/razorpay-create-order", "dest": "/api/razorpay-create-order.js" },
+    { "src": "/api/razorpay-verify-payment", "dest": "/api/razorpay-verify-payment.js" },
+    { "src": "/api/fastest-lap-bet", "dest": "/api/fastest-lap-bet.js" },
+    { "src": "/api/fastest-lap-bets", "dest": "/api/fastest-lap-bets.js" },
+    { "src": "/api/settle-bets", "dest": "/api/settle-bets.js" },
+    { "src": "/api/settle-fastest-lap", "dest": "/api/settle-fastest-lap.js" },
+    { "src": "/api/login-verify", "dest": "/api/login-verify.js" },
+    { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }
