@@ -85,8 +85,6 @@
     <div id="topbar">
         <!-- LEFT: Logo + Session info -->
         <div id="f1-logo" onclick="safeGoHome()" title="Back to Circuit Select">F1</div>
-        <div id="race-title">QUALIFYING SHOOTOUT · <span id="circuit-name-display">PORTUGUESE GRAND PRIX</span></div>
-        <button onclick="safeGoHome()" title="Circuit Select">← CIRCUITS</button>
 
         <!-- DIVIDER -->
         <div style="width:1px; height:24px; background:var(--border); flex-shrink:0;"></div>
@@ -96,7 +94,7 @@
 
         <div id="user-info-box">
             <!-- Username + Balance -->
-            <span id="display-username" style="color:var(--text); font-size:9px; font-weight:700; letter-spacing:1px; flex-shrink:0;"></span>
+            <span id="display-username" style="color:var(--text); font-size:9px; font-weight:700; letter-spacing:1px; flex-shrink:0; display: none!important;"></span>
             <span class="token-display" id="token-display-wrap">🪙 <span id="display-tokens">0.0</span> TKN</span>
 
             <!-- BETTING BUTTONS — unified bets zone -->
@@ -116,7 +114,7 @@
         </div>
 
         <!-- DIVIDER -->
-        <div style="width:1px; height:24px; background:var(--border); flex-shrink:0; margin-left:auto;"></div>
+        <div style="width:1px; height:24px; background:var(--border); flex-shrink:0;"></div>
 
         <!-- RIGHT: Weather + Flag Status -->
         <div id="weather-box">
@@ -176,21 +174,6 @@
                     <div id="champ-body"></div>
                 </div>
 
-                <div style="display:flex; gap:5px; flex-wrap:wrap;">
-                    <button id="champ-toggle-btn"
-                        style="background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.25); color:var(--yellow); font-family:'Orbitron',monospace; font-size:7px; padding:3px 8px; border-radius:4px; cursor:pointer; pointer-events:all; letter-spacing:1px;">
-                        CHAMP</button>
-                    <button id="telgraph-toggle-btn"
-                        style="background:rgba(0,210,190,0.08); border:1px solid rgba(0,210,190,0.25); color:var(--green); font-family:'Orbitron',monospace; font-size:7px; padding:3px 8px; border-radius:4px; cursor:pointer; pointer-events:all; letter-spacing:1px;">
-                        TELEMETRY</button>
-
-                    <div id="sector-wx-row" style="display:flex; gap:4px; align-items:center; font-size:11px; margin-left:2px;" title="Sector weather conditions">
-                        <span style="font-size:8px; color:var(--subtle); letter-spacing:1px; font-family:'Orbitron',monospace;">WX:</span>
-                        <span id="sec-wx-0" title="S1">☀️</span>
-                        <span id="sec-wx-1" title="S2">☀️</span>
-                        <span id="sec-wx-2" title="S3">☀️</span>
-                    </div>
-                </div>
             </div>
 
             <div id="leaderboard">
