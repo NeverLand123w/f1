@@ -10,6 +10,38 @@ const AUTH_STATE = {
     isGuest: false
 };
 
+
+// ── Global toast notification ─────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+    let t = document.getElementById('f1-global-toast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'f1-global-toast';
+        t.style.cssText = [
+            'position:fixed', 'bottom:28px', 'right:28px', 'z-index:999999',
+            'background:rgba(8,10,14,0.97)', 'border:1px solid rgba(255,255,255,0.08)',
+            'border-radius:8px', 'padding:13px 20px',
+            'font-family:\'Orbitron\',monospace', 'font-size:11px', 'font-weight:700',
+            'letter-spacing:1.5px', 'color:#f0f4f8',
+            'box-shadow:0 8px 30px rgba(0,0,0,0.7)',
+            'backdrop-filter:blur(12px)',
+            'pointer-events:none', 'max-width:320px',
+            'opacity:0', 'transform:translateY(8px)',
+            'transition:opacity 0.25s,transform 0.25s',
+            'border-left:3px solid var(--green)'
+        ].join(';');
+        document.body.appendChild(t);
+    }
+    const colors = { info: 'var(--green)', error: 'var(--red)', warn: 'var(--gold)' };
+    t.style.borderLeftColor = colors[type] || colors.info;
+    t.textContent = msg;
+    t.style.opacity = '1'; t.style.transform = 'translateY(0)';
+    clearTimeout(window._f1ToastTimer);
+    window._f1ToastTimer = setTimeout(() => {
+        t.style.opacity = '0'; t.style.transform = 'translateY(8px)';
+    }, 3200);
+}
+
 function initAuth() {
     const modal = document.getElementById('auth-modal');
     const submitBtn = document.getElementById('auth-submit');
@@ -90,6 +122,8 @@ function initAuth() {
 
                 if (AUTH_STATE.isLoginMode) {
                     localStorage.setItem('f1_token', data.token);
+                    localStorage.setItem('f1_username', data.username);
+                    localStorage.setItem('f1_display_tokens', data.tokens);
                     AUTH_STATE.token = data.token;
                     updateUserInterface(data.username, data.tokens);
                     modal.classList.add('hidden');
@@ -115,8 +149,12 @@ function initAuth() {
 }
 
 async function checkExistingSession() {
+    const modal = document.getElementById('auth-modal');
     const token = localStorage.getItem('f1_token');
-    if (!token) return;
+    if (!token) {
+        modal.classList.remove('hidden');
+        return;
+    }
 
     try {
         const res = await fetch(`${SERVER_URL}/api/me`, {
@@ -126,12 +164,18 @@ async function checkExistingSession() {
 
         if (res.ok) {
             AUTH_STATE.token = token;
+            localStorage.setItem('f1_username', data.username);
+            localStorage.setItem('f1_display_tokens', data.tokens);
             updateUserInterface(data.username, data.tokens, data.activeBets);
-            document.getElementById('auth-modal').classList.add('hidden');
+            modal.classList.add('hidden');
         } else {
             localStorage.removeItem('f1_token');
+            modal.classList.remove('hidden');
         }
-    } catch (e) { console.error("Session fetch failed", e); }
+    } catch (e) {
+        console.error("Session fetch failed", e);
+        modal.classList.remove('hidden');
+    }
 }
 
 function updateUserInterface(username, tokens, activeBets = [], isGuest = false) {
@@ -177,12 +221,12 @@ window.payWithRazorpay = async function (priceInRupees, tokenAmount) {
     const token = localStorage.getItem('f1_token');
 
     if (!token || token === "undefined" || token === "null") {
-        alert("Session Token missing in localStorage. Please log out and log in again.");
+        showToast("Session expired — please log in again", "error");
         return;
     }
 
     try {
-        const res = await fetch(`${SERVER_URL}/api/razorpay/create-order`, {
+        const res = await fetch(`${SERVER_URL}/api/razorpay-create-order`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -195,19 +239,19 @@ window.payWithRazorpay = async function (priceInRupees, tokenAmount) {
 
         // --- NEW: CATCH ACTUAL SERVER ERRORS ---
         if (!res.ok) {
-            alert(`Server Error: ${orderData.message || 'Failed to initiate order.'}`);
+            showToast("Server error: " + (orderData.message || "Failed to initiate order"), "error");
             return;
         }
 
         if (orderData.devCredit) {
             AUTH_STATE.tokens = orderData.newBalance;
             document.getElementById('display-tokens').textContent = Number(orderData.newBalance).toFixed(1);
-            alert("Tokens credited (Developer Mode - Keys not configured)!");
+            showToast("Tokens credited (Dev Mode)", "info");
             return;
         }
 
         if (!orderData.razorpayKey) {
-            alert("Payment configuration error. Razorpay Key was not returned by the server.");
+            showToast("Payment config error — contact support", "error");
             return;
         }
 
@@ -219,12 +263,9 @@ window.payWithRazorpay = async function (priceInRupees, tokenAmount) {
             name: 'F1 Paddock',
             description: `Purchase ${tokenAmount} Tokens`,
             handler: async function (response) {
-                const verifyRes = await fetch(`${SERVER_URL}/api/razorpay/verify-payment`, {
+                const verifyRes = await fetch(`${SERVER_URL}/api/razorpay-verify-payment`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
                         razorpay_order_id: response.razorpay_order_id,
                         razorpay_payment_id: response.razorpay_payment_id,
@@ -233,7 +274,14 @@ window.payWithRazorpay = async function (priceInRupees, tokenAmount) {
                     })
                 });
                 const result = await verifyRes.json();
-                alert(result.message);
+                if (verifyRes.ok && result.newBalance !== undefined) {
+                    AUTH_STATE.tokens = result.newBalance;
+                    document.getElementById('display-tokens').textContent = Number(result.newBalance).toFixed(1);
+                    localStorage.setItem('f1_display_tokens', result.newBalance);
+                    showToast(`${tokenAmount} tokens credited!`, 'success');
+                } else {
+                    showToast(result.message || 'Verification failed', 'error');
+                }
                 location.reload();
             },
             prefill: { name: AUTH_STATE.username },
@@ -244,7 +292,7 @@ window.payWithRazorpay = async function (priceInRupees, tokenAmount) {
         rzp.open();
     } catch (err) {
         console.error("Payment Error:", err);
-        alert("Could not process transaction. Please check network connection.");
+        showToast("Network error — check your connection", "error");
     }
 };
 function initBuyTokens() {
@@ -291,16 +339,18 @@ function isRaceActive() {
 
 function safeGoHome() {
     if (isRaceActive()) {
-        sessionStorage.setItem('f1_race_running', '1'); window.location.href = 'home.html';
+        sessionStorage.setItem('f1_race_running', '1'); window.location.href = 'index.html';
     } else {
-        sessionStorage.removeItem('f1_race_running'); window.location.href = 'home.html';
+        sessionStorage.removeItem('f1_race_running'); window.location.href = 'index.html';
     }
 }
 
 function initLogout() {
     document.getElementById('logout-btn').onclick = () => {
-        if (isRaceActive()) { alert('⛔ Cannot logout during an active race session.'); return; }
+        if (isRaceActive()) { showToast('Race in progress — finish or terminate first', 'error'); return; }
         localStorage.removeItem('f1_token');
+        localStorage.removeItem('f1_username');
+        localStorage.removeItem('f1_display_tokens');
         AUTH_STATE.token = null; AUTH_STATE.username = null;
         AUTH_STATE.tokens = 0; AUTH_STATE.isGuest = false;
         document.getElementById('user-info-box').style.display = 'none';
@@ -357,17 +407,17 @@ function initFastestLapBetSystem() {
     let trackedLap = 0;
 
     setInterval(() => {
-        if (!F1Game || F1Game.state !== 'GREEN') { flBtn.style.display = 'none'; return; }
+        if (!F1Game || F1Game.state !== 'GREEN') { flBtn.disabled = true; return; }
         const loggedIn = AUTH_STATE.token || localStorage.getItem('f1_token');
-        if (!loggedIn) { flBtn.style.display = 'none'; return; }
+        if (!loggedIn) { flBtn.disabled = true; return; }
         const topCar = [...F1Game.cars].sort((a, b) => a.uiPos - b.uiPos)[0];
-        if (!topCar) { flBtn.style.display = 'none'; return; }
+        if (!topCar) { flBtn.disabled = true; return; }
         const lap = topCar.currentLap; const lapFrac = topCar.fraction;
 
         if (lap > 1 && lap !== trackedLap && lapFrac < 0.08 && !flBetState.placedLaps.has(lap)) {
             trackedLap = lap; openFLWindow(lap);
         }
-        if (flBetState.active && !flBetState.placedLaps.has(flBetState.lapNumber)) { flBtn.style.display = 'block'; } else { flBtn.style.display = 'none'; }
+        if (flBetState.active && !flBetState.placedLaps.has(flBetState.lapNumber)) { flBtn.disabled = false; } else { flBtn.disabled = true; }
     }, 300);
 
     function openFLWindow(lap) {
@@ -378,7 +428,7 @@ function initFastestLapBetSystem() {
             if (flModal.classList.contains('show')) { updateFLCountdownUI(); }
             if (flBetState.secondsLeft <= 0) {
                 clearInterval(flBetState.intervalId);
-                flBetState.active = false; flBtn.style.display = 'none';
+                flBetState.active = false; flBtn.disabled = true;
                 if (flModal.classList.contains('show')) { flModal.classList.remove('show'); }
             }
         }, 1000);
@@ -595,7 +645,7 @@ function initBettingSystem() {
         const currentLap = topCar ? topCar.currentLap : 0;
         const inPreRace = (F1Game.state === 'GRID_PREP' || F1Game.state === 'GRID_WAIT' || F1Game.state === 'FORMATION');
         const inEarlyRace = F1Game.state === 'GREEN' && currentLap <= 2;
-        if (!inPreRace && !inEarlyRace) { alert('❌ Betting window closed! Bets accepted before race and up to lap 2.'); return; }
+        if (!inPreRace && !inEarlyRace) { showToast('Betting window closed — bets accepted until lap 2', 'warn'); return; }
         if (inEarlyRace) { const btn = document.querySelector(`.bet-window-btn[data-extra="${Math.min(currentLap, 2)}"]`); if (btn) btn.click(); }
 
         betModal.classList.remove('hidden'); betModal.style.display = 'flex';
@@ -668,7 +718,7 @@ function initBettingSystem() {
             if (!F1Game || F1Game.state !== 'GREEN') return;
             const topCar = F1Game.cars ? [...F1Game.cars].sort((a, b) => a.uiPos - b.uiPos)[0] : null;
             const lapsLeft = topCar ? TOTAL_LAPS - topCar.currentLap : 99;
-            if (lapsLeft <= 2) { alert('⛔ Cashout locked — last 2 laps of the race!'); return; }
+            if (lapsLeft <= 2) { showToast('Cashout locked — last 2 laps!', 'warn'); return; }
             const listEl = document.getElementById('cashout-bets-list'); const msgEl = document.getElementById('cashout-msg');
             listEl.innerHTML = ''; msgEl.textContent = '';
 
