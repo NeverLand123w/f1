@@ -21,6 +21,22 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use((req, res, next) => {
+    if (req.path.endsWith('.css')) res.type('text/css');
+    next();
+});
+
+app.get('/api/debug-path', (req, res) => {
+    const fs = require('fs');
+    const publicPath = path.join(__dirname, '../public');
+    res.json({
+        __dirname,
+        publicPath,
+        exists: fs.existsSync(publicPath),
+        files: fs.existsSync(publicPath) ? fs.readdirSync(publicPath) : []
+    });
+});
+
 // ── LIBSQL ROW HELPERS ───────────────────────────────────────────────────────
 // @libsql/client returns rows as arrays, not plain objects.
 // These helpers map column names to values.
@@ -464,8 +480,8 @@ app.post('/api/settle-fastest-lap', async (req, res) => {
 });
 
 // ── STATIC + FALLBACK ─────────────────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, '../public')));
-app.get('/{*path}', (req, res) => {
+app.use(express.static(path.join(__dirname, '..', 'public')));
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
