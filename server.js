@@ -68,9 +68,9 @@ async function initDB() {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        console.log('🔒 Database ready: Users, Bets, and Fastest Lap tables are online.');
+        console.log('Database ready: Users, Bets, and Fastest Lap tables are online.');
     } catch (err) {
-        console.error('❌ Database connection error:', err);
+        console.error('Database connection error:', err);
     }
 }
 initDB();
@@ -231,8 +231,6 @@ app.get('/api/fastest-lap-bets', async (req, res) => { /* original get fastest l
 // Ensure this is at the top after imports
 dotenv.config();
 
-// Add this to debug immediately
-console.log("DEBUG: Key ID from env:", process.env.RAZORPAY_KEY_ID);
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID || '',
@@ -328,4 +326,4 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
 });
 
 // Start Server
-server.listen(process.env.PORT || 3000, () => console.log(`🏎️ Server running at http://localhost:3000`));
+server.listen(process.env.PORT || 3000, () => console.log(`Server running at http://localhost:3000`));
