@@ -1,13 +1,15 @@
-// api/index.js — single serverless function (Vercel Hobby plan compatible)
-const express  = require('express');
-const bcrypt   = require('bcryptjs');
-const jwt      = require('jsonwebtoken');
-const speakeasy= require('speakeasy');
-const qrcode   = require('qrcode');
-const crypto   = require('crypto');
-const Razorpay = require('razorpay');
-const db       = require('../db');
-require('dotenv').config();
+// api/index.js
+require('dotenv').config(); // ← must be first
+
+const express   = require('express');
+const bcrypt    = require('bcryptjs');
+const jwt       = require('jsonwebtoken');
+const speakeasy = require('speakeasy');
+const qrcode    = require('qrcode');
+const crypto    = require('crypto');
+const Razorpay  = require('razorpay');
+const path      = require('path');
+const db        = require('../db');
 
 const app = express();
 app.use(express.json());
@@ -19,7 +21,25 @@ app.use((req, res, next) => {
     next();
 });
 
-// ── DB INIT ─────────────────────────────────────────────────────────────────
+// ── LIBSQL ROW HELPERS ───────────────────────────────────────────────────────
+// @libsql/client returns rows as arrays, not plain objects.
+// These helpers map column names to values.
+function rowToObj(result, index = 0) {
+    const row = result.rows[index];
+    const obj = {};
+    result.columns.forEach((col, i) => { obj[col] = row[i]; });
+    return obj;
+}
+
+function rowsToObjs(result) {
+    return result.rows.map(row => {
+        const obj = {};
+        result.columns.forEach((col, i) => { obj[col] = row[i]; });
+        return obj;
+    });
+}
+
+// ── DB INIT ──────────────────────────────────────────────────────────────────
 let dbInitialized = false;
 async function initDB() {
     if (dbInitialized) return;
@@ -63,6 +83,11 @@ function decodeToken(req) {
     return jwt.verify(header.split(' ')[1], process.env.JWT_SECRET);
 }
 
+// ── HEALTH CHECK ─────────────────────────────────────────────────────────────
+app.get('/api', (req, res) => {
+    res.json({ status: 'Online', message: 'F1 Bet API is running!', timestamp: new Date().toISOString() });
+});
+
 // ── REGISTER ─────────────────────────────────────────────────────────────────
 app.post('/api/register', async (req, res) => {
     try {
@@ -100,8 +125,9 @@ app.post('/api/verify-registration-2fa', async (req, res) => {
         if (result.rows.length === 0)
             return res.status(400).json({ message: 'User not found.' });
 
+        const { twoFactorSecret } = rowToObj(result);
         const verified = speakeasy.totp.verify({
-            secret: result.rows[0].twoFactorSecret, encoding: 'base32', token: otpCode, window: 1
+            secret: twoFactorSecret, encoding: 'base32', token: otpCode, window: 1
         });
         if (!verified)
             return res.status(400).json({ message: 'Invalid Authenticator Code!' });
@@ -118,11 +144,15 @@ app.post('/api/verify-registration-2fa', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
+        if (!username || !password)
+            return res.status(400).json({ message: 'Username and password are required.' });
+
         const result = await db.execute({ sql: 'SELECT * FROM users WHERE username = ?', args: [username] });
         if (result.rows.length === 0)
             return res.status(400).json({ message: 'User not found.' });
 
-        const isMatch = await bcrypt.compare(password, result.rows[0].password);
+        const user = rowToObj(result);
+        const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch)
             return res.status(400).json({ message: 'Wrong password.' });
 
@@ -141,7 +171,7 @@ app.post('/api/login-verify', async (req, res) => {
         if (result.rows.length === 0)
             return res.status(400).json({ message: 'User not found.' });
 
-        const user = result.rows[0];
+        const user = rowToObj(result);
         const verified = speakeasy.totp.verify({
             secret: user.twoFactorSecret, encoding: 'base32', token: otpCode, window: 1
         });
@@ -164,11 +194,12 @@ app.get('/api/me', async (req, res) => {
         if (userRes.rows.length === 0)
             return res.status(404).json({ message: 'User not found.' });
 
+        const user = rowToObj(userRes);
         const betsRes = await db.execute({
             sql:  "SELECT driver_name, token_amount FROM active_bets WHERE username = ? AND status = 'PENDING'",
             args: [decoded.username]
         });
-        res.json({ username: userRes.rows[0].username, tokens: userRes.rows[0].tokens, activeBets: betsRes.rows });
+        res.json({ username: user.username, tokens: user.tokens, activeBets: rowsToObjs(betsRes) });
     } catch (err) {
         res.status(401).json({ message: 'Invalid token.' });
     }
@@ -193,7 +224,8 @@ app.post('/api/bet', async (req, res) => {
             return res.status(400).json({ message: `You already have a pending bet on ${driverName}.` });
 
         const userRes = await db.execute({ sql: 'SELECT tokens FROM users WHERE username = ?', args: [decoded.username] });
-        const currentTokens = parseFloat(userRes.rows[0].tokens);
+        const { tokens } = rowToObj(userRes);
+        const currentTokens = parseFloat(tokens);
         if (currentTokens < amount)
             return res.status(400).json({ message: `Insufficient funds. You have ${currentTokens.toFixed(1)} tokens.` });
 
@@ -226,11 +258,13 @@ app.post('/api/cashout', async (req, res) => {
         if (betRes.rows.length === 0)
             return res.status(404).json({ message: 'No active bet found for this driver.' });
 
-        await db.execute({ sql: "UPDATE active_bets SET status = 'CASHED_OUT' WHERE id = ?", args: [betRes.rows[0].id] });
+        const bet = rowToObj(betRes);
+        await db.execute({ sql: "UPDATE active_bets SET status = 'CASHED_OUT' WHERE id = ?", args: [bet.id] });
         await db.execute({ sql: 'UPDATE users SET tokens = tokens + ? WHERE username = ?', args: [cashoutAmt, decoded.username] });
 
         const balRes = await db.execute({ sql: 'SELECT tokens FROM users WHERE username = ?', args: [decoded.username] });
-        res.json({ message: 'Cashout successful!', newBalance: balRes.rows[0].tokens, cashedOut: cashoutAmt });
+        const { tokens } = rowToObj(balRes);
+        res.json({ message: 'Cashout successful!', newBalance: tokens, cashedOut: cashoutAmt });
     } catch (err) {
         console.error('Cashout error:', err);
         res.status(500).json({ message: 'Cashout failed.' });
@@ -249,11 +283,10 @@ app.post('/api/razorpay-create-order', async (req, res) => {
         const keyId     = process.env.RAZORPAY_KEY_ID     || '';
         const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
 
-        // Dev-mode fallback
         if (!keyId || keyId === 'dummy_id') {
             await db.execute({ sql: 'UPDATE users SET tokens = tokens + ? WHERE username = ?', args: [tokens, decoded.username] });
             const bal = await db.execute({ sql: 'SELECT tokens FROM users WHERE username = ?', args: [decoded.username] });
-            return res.json({ devCredit: true, newBalance: bal.rows[0].tokens });
+            return res.json({ devCredit: true, newBalance: rowToObj(bal).tokens });
         }
 
         const rzp   = new Razorpay({ key_id: keyId, key_secret: keySecret });
@@ -286,7 +319,7 @@ app.post('/api/razorpay-verify-payment', async (req, res) => {
 
         await db.execute({ sql: 'UPDATE users SET tokens = tokens + ? WHERE username = ?', args: [purchasedTokens, decoded.username] });
         const bal = await db.execute({ sql: 'SELECT tokens FROM users WHERE username = ?', args: [decoded.username] });
-        res.json({ message: 'Tokens credited successfully!', newBalance: bal.rows[0].tokens });
+        res.json({ message: 'Tokens credited successfully!', newBalance: rowToObj(bal).tokens });
     } catch (err) {
         console.error('Razorpay verify error:', err);
         res.status(500).json({ message: 'Payment verification failed.' });
@@ -311,7 +344,7 @@ app.post('/api/fastest-lap-bet', async (req, res) => {
             return res.status(400).json({ message: `You already have a fastest-lap bet on lap ${lapNumber}.` });
 
         const userRes = await db.execute({ sql: 'SELECT tokens FROM users WHERE username = ?', args: [decoded.username] });
-        const currentTokens = parseFloat(userRes.rows[0].tokens);
+        const currentTokens = parseFloat(rowToObj(userRes).tokens);
         if (currentTokens < amount)
             return res.status(400).json({ message: `Insufficient funds. You have ${currentTokens.toFixed(1)} tokens.` });
 
@@ -322,7 +355,7 @@ app.post('/api/fastest-lap-bet', async (req, res) => {
         });
 
         const newBal = await db.execute({ sql: 'SELECT tokens FROM users WHERE username = ?', args: [decoded.username] });
-        res.json({ message: 'Fastest-lap bet locked!', newBalance: newBal.rows[0].tokens });
+        res.json({ message: 'Fastest-lap bet locked!', newBalance: rowToObj(newBal).tokens });
     } catch (err) {
         console.error('Fastest-lap bet error:', err);
         res.status(500).json({ message: 'Failed to place fastest-lap bet.' });
@@ -337,7 +370,7 @@ app.get('/api/fastest-lap-bets', async (req, res) => {
             sql:  'SELECT * FROM fastest_lap_bets WHERE username = ? ORDER BY created_at DESC',
             args: [decoded.username]
         });
-        res.json({ bets: result.rows });
+        res.json({ bets: rowsToObjs(result) });
     } catch (err) {
         console.error('Get fastest-lap bets error:', err);
         res.status(500).json({ message: 'Failed to fetch fastest-lap bets.' });
@@ -361,7 +394,7 @@ app.post('/api/settle-bets', async (req, res) => {
         let totalWinnings = 0;
         const betResults  = [];
 
-        for (const bet of betsReq.rows) {
+        for (const bet of rowsToObjs(betsReq)) {
             const betAmount    = parseFloat(bet.token_amount);
             const driverResult = raceResults.find(d => d.driverName === bet.driver_name);
             const pos          = driverResult ? driverResult.pos : 22;
@@ -387,7 +420,7 @@ app.post('/api/settle-bets', async (req, res) => {
             await db.execute({ sql: 'UPDATE users SET tokens = tokens + ? WHERE username = ?', args: [totalWinnings, decoded.username] });
 
         const balanceRes = await db.execute({ sql: 'SELECT tokens FROM users WHERE username = ?', args: [decoded.username] });
-        res.json({ message: 'Bets settled!', winnings: totalWinnings, newBalance: balanceRes.rows[0].tokens, details: betResults });
+        res.json({ message: 'Bets settled!', winnings: totalWinnings, newBalance: rowToObj(balanceRes).tokens, details: betResults });
     } catch (err) {
         console.error('Settle bets error:', err);
         res.status(500).json({ message: 'Failed to settle bets.' });
@@ -397,7 +430,7 @@ app.post('/api/settle-bets', async (req, res) => {
 // ── SETTLE FASTEST LAP ────────────────────────────────────────────────────────
 app.post('/api/settle-fastest-lap', async (req, res) => {
     try {
-        decodeToken(req); // auth check
+        decodeToken(req);
         const { lapNumber, fastestLapDriver } = req.body;
 
         if (!lapNumber || !fastestLapDriver)
@@ -409,7 +442,7 @@ app.post('/api/settle-fastest-lap', async (req, res) => {
         });
 
         const results = [];
-        for (const bet of betsRes.rows) {
+        for (const bet of rowsToObjs(betsRes)) {
             const won    = bet.driver_name === fastestLapDriver;
             const payout = won ? parseFloat(bet.token_amount) * 1.5 : 0;
 
@@ -430,4 +463,12 @@ app.post('/api/settle-fastest-lap', async (req, res) => {
     }
 });
 
-module.exports = app;
+// ── STATIC + FALLBACK ─────────────────────────────────────────────────────────
+app.use(express.static(path.join(__dirname, '../public')));
+app.get('/{*path}', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// ── START SERVER ──────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
