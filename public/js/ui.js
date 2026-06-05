@@ -216,8 +216,8 @@ function updateUserInterface(username, tokens, activeBets = [], isGuest = false)
     }
 }
 
-// --- SECURE RAZORPAY PAYMENT ---
-window.payWithRazorpay = async function (priceInRupees, tokenAmount) {
+// --- SECURE CASHFREE PAYMENT ---
+window.payWithCashfree = async function (priceInRupees, tokenAmount) {
     const token = localStorage.getItem('f1_token');
 
     if (!token || token === "undefined" || token === "null") {
@@ -226,7 +226,7 @@ window.payWithRazorpay = async function (priceInRupees, tokenAmount) {
     }
 
     try {
-        const res = await fetch(`${SERVER_URL}/api/razorpay-create-order`, {
+        const res = await fetch(`${SERVER_URL}/api/cashfree-create-order`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -237,12 +237,12 @@ window.payWithRazorpay = async function (priceInRupees, tokenAmount) {
 
         const orderData = await res.json();
 
-        // --- NEW: CATCH ACTUAL SERVER ERRORS ---
         if (!res.ok) {
             showToast("Server error: " + (orderData.message || "Failed to initiate order"), "error");
             return;
         }
 
+        // Dev mode: keys not set, tokens credited directly
         if (orderData.devCredit) {
             AUTH_STATE.tokens = orderData.newBalance;
             document.getElementById('display-tokens').textContent = Number(orderData.newBalance).toFixed(1);
@@ -250,46 +250,48 @@ window.payWithRazorpay = async function (priceInRupees, tokenAmount) {
             return;
         }
 
-        if (!orderData.razorpayKey) {
+        if (!orderData.paymentSessionId) {
             showToast("Payment config error — contact support", "error");
             return;
         }
 
-        const options = {
-            key: orderData.razorpayKey,
-            amount: orderData.amount,
-            currency: orderData.currency || 'INR',
-            order_id: orderData.orderId,
-            name: 'F1 Paddock',
-            description: `Purchase ${tokenAmount} Tokens`,
-            handler: async function (response) {
-                const verifyRes = await fetch(`${SERVER_URL}/api/razorpay-verify-payment`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        razorpay_order_id: response.razorpay_order_id,
-                        razorpay_payment_id: response.razorpay_payment_id,
-                        razorpay_signature: response.razorpay_signature,
-                        purchasedTokens: tokenAmount
-                    })
-                });
-                const result = await verifyRes.json();
-                if (verifyRes.ok && result.newBalance !== undefined) {
-                    AUTH_STATE.tokens = result.newBalance;
-                    document.getElementById('display-tokens').textContent = Number(result.newBalance).toFixed(1);
-                    localStorage.setItem('f1_display_tokens', result.newBalance);
-                    showToast(`${tokenAmount} tokens credited!`, 'success');
-                } else {
-                    showToast(result.message || 'Verification failed', 'error');
-                }
-                location.reload();
-            },
-            prefill: { name: AUTH_STATE.username },
-            theme: { color: '#00d2be' }
+        // Cashfree JS SDK (loaded in game.html)
+        const cashfree = Cashfree({
+            mode: orderData.env === 'production' ? 'production' : 'sandbox'
+        });
+
+        const checkoutOptions = {
+            paymentSessionId: orderData.paymentSessionId,
+            redirectTarget:   '_modal'   // Opens in-page modal, no redirect
         };
 
-        const rzp = new Razorpay(options);
-        rzp.open();
+        const cfResult = await cashfree.checkout(checkoutOptions);
+
+        if (cfResult.error) {
+            showToast("Payment failed: " + cfResult.error.message, "error");
+            return;
+        }
+
+        // Verify server-side after modal closes
+        const verifyRes = await fetch(`${SERVER_URL}/api/cashfree-verify-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                orderId:         orderData.orderId,
+                purchasedTokens: tokenAmount
+            })
+        });
+        const result = await verifyRes.json();
+
+        if (verifyRes.ok && result.newBalance !== undefined) {
+            AUTH_STATE.tokens = result.newBalance;
+            document.getElementById('display-tokens').textContent = Number(result.newBalance).toFixed(1);
+            localStorage.setItem('f1_display_tokens', result.newBalance);
+            showToast(`${tokenAmount} tokens credited!`, 'success');
+        } else {
+            showToast(result.message || 'Verification failed', 'error');
+        }
+        location.reload();
     } catch (err) {
         console.error("Payment Error:", err);
         showToast("Network error — check your connection", "error");
@@ -319,7 +321,7 @@ function initBuyTokens() {
         if (selected) {
             const price = parseInt(selected.getAttribute('data-price'));
             const tokens = parseInt(selected.getAttribute('data-tokens'));
-            window.payWithRazorpay(price, tokens);
+            window.payWithCashfree(price, tokens);
             modal.classList.add('hidden');
         }
     };
@@ -339,9 +341,9 @@ function isRaceActive() {
 
 function safeGoHome() {
     if (isRaceActive()) {
-        sessionStorage.setItem('f1_race_running', '1'); window.location.href = 'index.html';
+        sessionStorage.setItem('f1_race_running', '1'); window.location.href = 'index';
     } else {
-        sessionStorage.removeItem('f1_race_running'); window.location.href = 'index.html';
+        sessionStorage.removeItem('f1_race_running'); window.location.href = 'index';
     }
 }
 

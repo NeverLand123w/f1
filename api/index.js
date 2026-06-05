@@ -1,15 +1,15 @@
 // api/index.js
 require('dotenv').config(); // ← must be first
 
-const express   = require('express');
-const bcrypt    = require('bcryptjs');
-const jwt       = require('jsonwebtoken');
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const speakeasy = require('speakeasy');
-const qrcode    = require('qrcode');
-const crypto    = require('crypto');
-const Razorpay  = require('razorpay');
-const path      = require('path');
-const db        = require('../db');
+const qrcode = require('qrcode');
+const crypto = require('crypto');
+const axios = require('axios');
+const path = require('path');
+const db = require('../db');
 
 const app = express();
 app.use(express.json());
@@ -77,7 +77,7 @@ async function initDB() {
         status         TEXT DEFAULT 'PENDING',
         created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
-    try { await db.execute("ALTER TABLE active_bets ADD COLUMN window_penalty REAL DEFAULT 1.0"); } catch (_) {}
+    try { await db.execute("ALTER TABLE active_bets ADD COLUMN window_penalty REAL DEFAULT 1.0"); } catch (_) { }
     await db.execute(`CREATE TABLE IF NOT EXISTS fastest_lap_bets (
         id           INTEGER PRIMARY KEY AUTOINCREMENT,
         username     TEXT NOT NULL,
@@ -119,7 +119,7 @@ app.post('/api/register', async (req, res) => {
         const secret = speakeasy.generateSecret({ name: `F1 Paddock (${username})` });
 
         await db.execute({
-            sql:  'INSERT INTO users (username, password, twoFactorSecret) VALUES (?, ?, ?)',
+            sql: 'INSERT INTO users (username, password, twoFactorSecret) VALUES (?, ?, ?)',
             args: [username, hashedPassword, secret.base32]
         });
 
@@ -212,7 +212,7 @@ app.get('/api/me', async (req, res) => {
 
         const user = rowToObj(userRes);
         const betsRes = await db.execute({
-            sql:  "SELECT driver_name, token_amount FROM active_bets WHERE username = ? AND status = 'PENDING'",
+            sql: "SELECT driver_name, token_amount FROM active_bets WHERE username = ? AND status = 'PENDING'",
             args: [decoded.username]
         });
         res.json({ username: user.username, tokens: user.tokens, activeBets: rowsToObjs(betsRes) });
@@ -226,14 +226,14 @@ app.post('/api/bet', async (req, res) => {
     try {
         const decoded = decodeToken(req);
         const { driverName, betAmount, windowPenalty } = req.body;
-        const amount  = parseFloat(betAmount);
+        const amount = parseFloat(betAmount);
         const penalty = parseFloat(windowPenalty) || 1.0;
 
         if (!driverName || isNaN(amount) || amount <= 0)
             return res.status(400).json({ message: 'Invalid bet parameters.' });
 
         const existingBet = await db.execute({
-            sql:  "SELECT id FROM active_bets WHERE username = ? AND driver_name = ? AND status = 'PENDING'",
+            sql: "SELECT id FROM active_bets WHERE username = ? AND driver_name = ? AND status = 'PENDING'",
             args: [decoded.username, driverName]
         });
         if (existingBet.rows.length > 0)
@@ -247,7 +247,7 @@ app.post('/api/bet', async (req, res) => {
 
         await db.execute({ sql: 'UPDATE users SET tokens = tokens - ? WHERE username = ?', args: [amount, decoded.username] });
         await db.execute({
-            sql:  'INSERT INTO active_bets (username, driver_name, token_amount, window_penalty) VALUES (?, ?, ?, ?)',
+            sql: 'INSERT INTO active_bets (username, driver_name, token_amount, window_penalty) VALUES (?, ?, ?, ?)',
             args: [decoded.username, driverName, amount, penalty]
         });
         res.json({ message: 'Bet confirmed!', newBalance: currentTokens - amount });
@@ -268,7 +268,7 @@ app.post('/api/cashout', async (req, res) => {
             return res.status(400).json({ message: 'Invalid cashout request.' });
 
         const betRes = await db.execute({
-            sql:  "SELECT * FROM active_bets WHERE username = ? AND driver_name = ? AND status = 'PENDING'",
+            sql: "SELECT * FROM active_bets WHERE username = ? AND driver_name = ? AND status = 'PENDING'",
             args: [decoded.username, driverName]
         });
         if (betRes.rows.length === 0)
@@ -287,8 +287,8 @@ app.post('/api/cashout', async (req, res) => {
     }
 });
 
-// ── RAZORPAY CREATE ORDER ─────────────────────────────────────────────────────
-app.post('/api/razorpay-create-order', async (req, res) => {
+// ── CASHFREE CREATE ORDER ─────────────────────────────────────────────────────
+app.post('/api/cashfree-create-order', async (req, res) => {
     try {
         const decoded = decodeToken(req);
         const { tokens, price } = req.body;
@@ -296,48 +296,113 @@ app.post('/api/razorpay-create-order', async (req, res) => {
         if (!tokens || !price)
             return res.status(400).json({ message: 'Missing tokens or price parameter.' });
 
-        const keyId     = process.env.RAZORPAY_KEY_ID     || '';
-        const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
+        const appId     = process.env.CASHFREE_APP_ID || '';
+        const secretKey = process.env.CASHFREE_SECRET_KEY || '';
 
-        if (!keyId || keyId === 'dummy_id') {
+        // Dev mode: no real keys configured
+        if (!appId || appId === 'dummy_id') {
             await db.execute({ sql: 'UPDATE users SET tokens = tokens + ? WHERE username = ?', args: [tokens, decoded.username] });
             const bal = await db.execute({ sql: 'SELECT tokens FROM users WHERE username = ?', args: [decoded.username] });
             return res.json({ devCredit: true, newBalance: rowToObj(bal).tokens });
         }
 
-        const rzp   = new Razorpay({ key_id: keyId, key_secret: keySecret });
-        const order = await rzp.orders.create({
-            amount:   Math.round(parseFloat(price) * 100),
-            currency: 'INR',
-            receipt:  `tkn_${Date.now()}`
+        const orderId = `f1_${Date.now()}_${decoded.username.replace(/\s+/g, '_')}`;
+        const isProd  = process.env.CASHFREE_ENV === 'production';
+        const baseUrl = isProd
+            ? 'https://api.cashfree.com/pg'
+            : 'https://sandbox.cashfree.com/pg';
+
+        const payload = {
+            order_id:       orderId,
+            order_amount:   parseFloat(price),
+            order_currency: 'INR',
+            customer_details: {
+                customer_id: decoded.username.replace(/\s+/g, '_'),
+                customer_name:  decoded.username,
+                customer_email: decoded.email || `${decoded.username}@f1paddock.app`,
+                customer_phone: '9999999999'   // Required by Cashfree; collect from user if possible
+            },
+            order_meta: {
+                return_url: `${process.env.APP_URL || ''}/payment-return?order_id={order_id}`
+            },
+            order_tags: { tokens: String(tokens) }
+        };
+
+        const cfRes = await axios.post(`${baseUrl}/orders`, payload, {
+            headers: {
+                'x-api-version':   '2023-08-01',
+                'x-client-id':     appId,
+                'x-client-secret': secretKey,
+                'Content-Type':    'application/json'
+            }
         });
-        res.json({ orderId: order.id, amount: order.amount, currency: order.currency, razorpayKey: keyId });
+
+        const { order_id, payment_session_id } = cfRes.data;
+        res.json({
+            orderId:          order_id,
+            paymentSessionId: payment_session_id,
+            amount:           parseFloat(price),
+            cashfreeAppId:    appId,
+            env:              isProd ? 'production' : 'sandbox'
+        });
     } catch (err) {
-        console.error('Razorpay create-order error:', err);
+        console.error('Cashfree create-order error:', err?.response?.data || err.message);
         res.status(500).json({ message: 'Could not create order.' });
     }
 });
 
-// ── RAZORPAY VERIFY PAYMENT ───────────────────────────────────────────────────
-app.post('/api/razorpay-verify-payment', async (req, res) => {
+// ── CASHFREE VERIFY PAYMENT ───────────────────────────────────────────────────
+app.post('/api/cashfree-verify-payment', async (req, res) => {
     try {
         const decoded = decodeToken(req);
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, purchasedTokens } = req.body;
+        const { orderId, purchasedTokens } = req.body;
 
-        const body        = `${razorpay_order_id}|${razorpay_payment_id}`;
-        const expectedSig = crypto
-            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-            .update(body)
-            .digest('hex');
+        if (!orderId || !purchasedTokens)
+            return res.status(400).json({ message: 'Missing orderId or purchasedTokens.' });
 
-        if (expectedSig !== razorpay_signature)
-            return res.status(400).json({ message: 'Payment signature mismatch! Transaction unauthorized.' });
+        const appId     = process.env.CASHFREE_APP_ID;
+        const secretKey = process.env.CASHFREE_SECRET_KEY;
+        const isProd    = process.env.CASHFREE_ENV === 'production';
+        const baseUrl   = isProd
+            ? 'https://api.cashfree.com/pg'
+            : 'https://sandbox.cashfree.com/pg';
 
-        await db.execute({ sql: 'UPDATE users SET tokens = tokens + ? WHERE username = ?', args: [purchasedTokens, decoded.username] });
+        // Fetch order status directly from Cashfree (server-to-server, tamper-proof)
+        const cfRes = await axios.get(`${baseUrl}/orders/${orderId}`, {
+            headers: {
+                'x-api-version':   '2023-08-01',
+                'x-client-id':     appId,
+                'x-client-secret': secretKey
+            }
+        });
+
+        const { order_status } = cfRes.data;
+
+        if (order_status !== 'PAID')
+            return res.status(400).json({ message: `Payment not completed. Status: ${order_status}` });
+
+        // Guard: ensure this order hasn't already been credited (idempotency)
+        const existing = await db.execute({
+            sql:  'SELECT id FROM token_orders WHERE order_id = ?',
+            args: [orderId]
+        });
+        if (existing.rows.length > 0)
+            return res.status(400).json({ message: 'Order already processed.' });
+
+        // Record the order and credit tokens atomically
+        await db.execute({
+            sql:  'INSERT INTO token_orders (order_id, username, tokens) VALUES (?, ?, ?)',
+            args: [orderId, decoded.username, purchasedTokens]
+        });
+        await db.execute({
+            sql:  'UPDATE users SET tokens = tokens + ? WHERE username = ?',
+            args: [purchasedTokens, decoded.username]
+        });
+
         const bal = await db.execute({ sql: 'SELECT tokens FROM users WHERE username = ?', args: [decoded.username] });
         res.json({ message: 'Tokens credited successfully!', newBalance: rowToObj(bal).tokens });
     } catch (err) {
-        console.error('Razorpay verify error:', err);
+        console.error('Cashfree verify error:', err?.response?.data || err.message);
         res.status(500).json({ message: 'Payment verification failed.' });
     }
 });
@@ -353,7 +418,7 @@ app.post('/api/fastest-lap-bet', async (req, res) => {
             return res.status(400).json({ message: 'Invalid fastest-lap bet parameters.' });
 
         const existing = await db.execute({
-            sql:  "SELECT id FROM fastest_lap_bets WHERE username = ? AND lap_number = ? AND status = 'PENDING'",
+            sql: "SELECT id FROM fastest_lap_bets WHERE username = ? AND lap_number = ? AND status = 'PENDING'",
             args: [decoded.username, lapNumber]
         });
         if (existing.rows.length > 0)
@@ -366,7 +431,7 @@ app.post('/api/fastest-lap-bet', async (req, res) => {
 
         await db.execute({ sql: 'UPDATE users SET tokens = tokens - ? WHERE username = ?', args: [amount, decoded.username] });
         await db.execute({
-            sql:  'INSERT INTO fastest_lap_bets (username, driver_name, lap_number, token_amount) VALUES (?, ?, ?, ?)',
+            sql: 'INSERT INTO fastest_lap_bets (username, driver_name, lap_number, token_amount) VALUES (?, ?, ?, ?)',
             args: [decoded.username, driverName, lapNumber, amount]
         });
 
@@ -382,8 +447,8 @@ app.post('/api/fastest-lap-bet', async (req, res) => {
 app.get('/api/fastest-lap-bets', async (req, res) => {
     try {
         const decoded = decodeToken(req);
-        const result  = await db.execute({
-            sql:  'SELECT * FROM fastest_lap_bets WHERE username = ? ORDER BY created_at DESC',
+        const result = await db.execute({
+            sql: 'SELECT * FROM fastest_lap_bets WHERE username = ? ORDER BY created_at DESC',
             args: [decoded.username]
         });
         res.json({ bets: rowsToObjs(result) });
@@ -403,30 +468,30 @@ app.post('/api/settle-bets', async (req, res) => {
             return res.status(400).json({ message: 'raceResults must be an array.' });
 
         const betsReq = await db.execute({
-            sql:  "SELECT * FROM active_bets WHERE username = ? AND status = 'PENDING'",
+            sql: "SELECT * FROM active_bets WHERE username = ? AND status = 'PENDING'",
             args: [decoded.username]
         });
 
         let totalWinnings = 0;
-        const betResults  = [];
+        const betResults = [];
 
         for (const bet of rowsToObjs(betsReq)) {
-            const betAmount    = parseFloat(bet.token_amount);
+            const betAmount = parseFloat(bet.token_amount);
             const driverResult = raceResults.find(d => d.driverName === bet.driver_name);
-            const pos          = driverResult ? driverResult.pos : 22;
+            const pos = driverResult ? driverResult.pos : 22;
 
             const multiplier =
                 pos === 1 ? 2.0 :
-                pos === 2 ? 1.5 :
-                pos === 3 ? 1.2 :
-                pos <= 5  ? 1.0 :
-                pos <= 8  ? 0.5 : 0;
+                    pos === 2 ? 1.5 :
+                        pos === 3 ? 1.2 :
+                            pos <= 5 ? 1.0 :
+                                pos <= 8 ? 0.5 : 0;
 
             const payout = betAmount * multiplier * (parseFloat(bet.window_penalty) || 1.0);
             totalWinnings += payout;
 
             await db.execute({
-                sql:  "UPDATE active_bets SET status = ? WHERE id = ?",
+                sql: "UPDATE active_bets SET status = ? WHERE id = ?",
                 args: [payout > 0 ? 'WON' : 'LOST', bet.id]
             });
             betResults.push({ driver: bet.driver_name, pos, betted: betAmount, won: payout });
@@ -453,17 +518,17 @@ app.post('/api/settle-fastest-lap', async (req, res) => {
             return res.status(400).json({ message: 'lapNumber and fastestLapDriver are required.' });
 
         const betsRes = await db.execute({
-            sql:  "SELECT * FROM fastest_lap_bets WHERE lap_number = ? AND status = 'PENDING'",
+            sql: "SELECT * FROM fastest_lap_bets WHERE lap_number = ? AND status = 'PENDING'",
             args: [lapNumber]
         });
 
         const results = [];
         for (const bet of rowsToObjs(betsRes)) {
-            const won    = bet.driver_name === fastestLapDriver;
+            const won = bet.driver_name === fastestLapDriver;
             const payout = won ? parseFloat(bet.token_amount) * 1.5 : 0;
 
             await db.execute({
-                sql:  'UPDATE fastest_lap_bets SET status = ?, payout = ? WHERE id = ?',
+                sql: 'UPDATE fastest_lap_bets SET status = ?, payout = ? WHERE id = ?',
                 args: [won ? 'WON' : 'LOST', payout, bet.id]
             });
             if (won)
@@ -480,8 +545,15 @@ app.post('/api/settle-fastest-lap', async (req, res) => {
 });
 
 // ── STATIC + FALLBACK ─────────────────────────────────────────────────────────
+app.get('/game', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/game.html'));
+});
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
 app.use(express.static(path.join(__dirname, '..', 'public')));
-app.get('*', (req, res) => {
+app.get('/{*splat}', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 

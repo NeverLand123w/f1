@@ -41,6 +41,16 @@ async function initDB() {
             created_at   DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
+    // Idempotency table — prevents double-crediting the same Cashfree order
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS token_orders (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id   TEXT UNIQUE NOT NULL,
+            username   TEXT NOT NULL,
+            tokens     REAL NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
     initialized = true;
 }
 
