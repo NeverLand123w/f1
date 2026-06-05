@@ -90,12 +90,7 @@ input {
   display: none !important;
 }
 
-/* Modal Edge-Case Initializers (Hide ones missing class="hidden" in HTML so JS loads cleanly) */
-#fl-bet-modal:not(.js-open),
-#bet-results-modal:not(.js-open),
-#skip-qual-modal:not(.js-open) {
-  display: none;
-}
+
 
 /* ==========================================================================
    TOP ACTION BAR (NAV & BALANCE)
